@@ -1,0 +1,50 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="probe" uuid="7c3e2a41-0b5d-4e6f-9a8b-1c2d3e4f5a6b">
+      <sDescription>Development aid: signal statistics for 0.9 s of its input (RMS, peak, zero-crossing rate, count of extreme samples), plus the freak control bus. It prints one line to the patcher log, so a -runTest run can check a patch on the board without listening.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets>
+         <frac32buffer name="in"/>
+      </inlets>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs>
+         <spinner name="id" MinValue="0" MaxValue="99" DefaultValue="0"/>
+      </attribs>
+      <includes>
+         <include>../../lib/launchkey_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[int32_t n, blocks, zc, extreme, prev;
+float sumsq, peak;
+bool done;]]></code.declaration>
+      <code.init><![CDATA[n = blocks = zc = extreme = 0;
+prev = 0;
+sumsq = peak = 0.0f;
+done = false;]]></code.init>
+      <code.krate><![CDATA[if (!done) {
+   blocks++;
+   if (blocks > 300) {  // skip the first 0.1 s (attack)
+      for (int i = 0; i < BUFSIZE; i++) {
+         const int32_t s = inlet_in[i];
+         const float x = s * (1.0f / (1 << 27));
+         sumsq += x * x;
+         const float a = x < 0 ? -x : x;
+         if (a > peak) peak = a;
+         if ((s >= 0) != (prev >= 0)) zc++;
+         if (s == INT32_MIN || s == INT32_MAX || a > 8.0f) extreme++;
+         prev = s;
+         n++;
+      }
+   }
+   if (blocks == 2500 + 40 * attr_id) {  // staggered: the log keeps one message per burst
+      const freak::Bus &b = freak::bus();
+      const float rms = sumsq > 0 ? sumsq / n : 0;
+      LogTextMessage("probe %d: n %d rms^2 x1e6 %d peak x1000 %d zc/s %d extreme %d | shape %d cut_oct x100 %d q x100 %d amp_s x100 %d master x100 %d",
+         attr_id, n, (int)(rms * 1e6f), (int)(peak * 1000), (int)(zc * 48000.0f / n), extreme,
+         b.shape, (int)(b.cutoff_oct * 100), (int)(b.q * 100), (int)(b.amp_s * 100), (int)(b.master * 100));
+      done = true;
+   }
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

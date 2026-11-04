@@ -62,6 +62,19 @@ since other gear covers them. The README has the setup and measurements.
   one translation unit, so there is one instance. `freak_voice` and
   `fx_delay` read it, with no wires. Change the mapping in the header, keep
   `tests/` and `docs/cheatsheet.tex` in step, and run `make test cheatsheet`.
+- **Do not trust Ksoloti's Mutable Instruments wrappers to size buffers
+  correctly.** The factory fx/lmnts/reverb (32 KB allocated, 64 KB used) and
+  the Braids delay lines (8200 bytes allocated, 16384 used) both overran.
+  sdram_malloc is a bump allocator, so an overrun silently corrupts the next
+  object's memory, and the result depends on init order. Check each engine's
+  real buffer size (`sizeof`, FxEngine template size) and run `make render`
+  under ASan.
+- If the board "sounds wrong", probe before guessing: put `dev/probe` (id
+  attribute) at each stage and run `-runTest`; the probe logs are staggered,
+  because the log keeps only one message per burst. Compare with the host
+  render (`make render`).
+- Inside a polyphonic subpatch the generated code has a class named `voice`,
+  so never name an object member `voice`.
 - SRAM1 is at 91 % (41.2 of 44 KB) with freak v1. The next code growth has to
   go to SRAM3 (`__attribute__((section(".sram3")))`), or Braids has to shrink.
 

@@ -54,14 +54,8 @@
       <params/>
       <attribs/>
    </obj>
-   <obj type="fx/lmnts/reverb" name="reverb" x="336" y="14">
-      <params>
-         <frac32.u.map name="amount" value="0.0"/>
-         <frac32.u.map name="time" value="0.0"/>
-         <frac32.u.map name="diffusion" value="0.0"/>
-         <frac32.u.map name="gain" value="32.0"/>
-         <frac32.u.map name="lowpass" value="0.0"/>
-      </params>
+   <obj type="fx_reverb" name="reverb" x="336" y="14">
+      <params/>
       <attribs/>
    </obj>
    <obj type="gain/vca" name="master_l" x="532" y="14">
@@ -88,22 +82,6 @@
       <net>
          <source obj="delay" outlet="r"/>
          <dest obj="reverb" inlet="r"/>
-      </net>
-      <net>
-         <source obj="ctl" outlet="revamount"/>
-         <dest obj="reverb" inlet="amount"/>
-      </net>
-      <net>
-         <source obj="ctl" outlet="revtime"/>
-         <dest obj="reverb" inlet="time"/>
-      </net>
-      <net>
-         <source obj="ctl" outlet="revdiffusion"/>
-         <dest obj="reverb" inlet="diffusion"/>
-      </net>
-      <net>
-         <source obj="ctl" outlet="revlowpass"/>
-         <dest obj="reverb" inlet="lowpass"/>
       </net>
       <net>
          <source obj="reverb" outlet="l"/>

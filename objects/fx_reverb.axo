@@ -1,0 +1,52 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="fx_reverb" uuid="5e9b1c2d-7a3f-4c8e-b6d0-2f4a8c1e9b37">
+      <sDescription>Elements reverb (Mutable Instruments, code in the firmware) for the freak synth. Amount, time, diffusion and low-pass come from the launchkey_ctl control bus. Unlike the factory fx/lmnts/reverb, it allocates the whole 64 KB delay memory the engine uses. The factory object allocates 32 KB and its engine writes 32 KB past that, into whatever was allocated next.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+      </inlets>
+      <outlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/launchkey_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[// elements::Reverb runs FxEngine<32768, FORMAT_16_BIT>: 32768 uint16 words.
+static const size_t kBytes = 32768 * sizeof(uint16_t);
+elements::Reverb reverb;
+bool ok;
+float left[BUFSIZE], right[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[uint16_t *buf = (uint16_t *)sdram_malloc(kBytes);
+ok = buf != 0;
+if (ok)
+   reverb.Init(buf);]]></code.init>
+      <code.krate><![CDATA[if (!ok) {
+   for (int i = 0; i < BUFSIZE; i++) {
+      outlet_l[i] = inlet_l[i];
+      outlet_r[i] = inlet_r[i];
+   }
+   return;
+}
+const freak::Bus &b = freak::bus();
+reverb.set_amount(b.rev_amount);
+reverb.set_input_gain(0.5f);
+reverb.set_time(b.rev_time);
+reverb.set_diffusion(b.rev_diff);
+reverb.set_lp(b.rev_lp);
+for (int i = 0; i < BUFSIZE; i++) {
+   left[i] = inlet_l[i] * (1.0f / (1 << 27));
+   right[i] = inlet_r[i] * (1.0f / (1 << 27));
+}
+reverb.Process(left, right, BUFSIZE);
+for (int i = 0; i < BUFSIZE; i++) {
+   outlet_l[i] = (int32_t)(freak::clampf(left[i], -15.9f, 15.9f) * (1 << 27));
+   outlet_r[i] = (int32_t)(freak::clampf(right[i], -15.9f, 15.9f) * (1 << 27));
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

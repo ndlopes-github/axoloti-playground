@@ -1,6 +1,6 @@
 <objdefs appVersion="1.1.0">
    <obj.normal id="freak_voice" uuid="fa7cfc09-4bfd-4396-acaa-6aa62ad8050b">
-      <sDescription>One voice of the freak synth: Braids digital oscillator -> state-variable filter (LP/BP/HP) -> amp, with an amp envelope, a mod envelope (to cutoff and optionally timbre, can cycle) and glide. Its settings come from the control bus of launchkey_ctl, so it only works next to one. Made for a polyphonic subpatch: wire midi/in/keyb note, gate and velocity.</sDescription>
+      <sDescription>One voice of the freak synth: Braids digital oscillator -> state-variable filter (LP/BP/HP) -> amp, with an amp envelope, a mod envelope (to cutoff and optionally timbre, can cycle) and glide. Its settings come from the control bus of launchkey_ctl, so it only works next to one. Made for a polyphonic subpatch: wire midi/in/keyb note, gate and velocity. The code is lib/freak_voice.h, shared with the host renderer.</sDescription>
       <author>Axoloti project</author>
       <license>MIT</license>
       <inlets>
@@ -15,68 +15,18 @@
       <params/>
       <attribs/>
       <includes>
-         <include>../lib/launchkey_ctl.h</include>
+         <include>../lib/freak_voice.h</include>
          <include>../third_party/braids/digital_oscillator.cc</include>
       </includes>
-      <code.declaration><![CDATA[// Everything here is trivially destructible, because the voice lives in a
-// polyphonic subpatch (see README: atexit). The oscillator therefore sits in
-// raw storage, built with placement new.
-alignas(braids::DigitalOscillator) uint8_t osc_mem[sizeof(braids::DigitalOscillator)];
-braids::DigitalOscillator *osc;
-freak::Env amp, mod;
-freak::Svf svf;
-freak::Glide glide;
-uint8_t sync[BUFSIZE];
-int16_t buf[BUFSIZE];
-bool prev_gate;
-float prev_gain;]]></code.declaration>
-      <code.init><![CDATA[osc = new (osc_mem) braids::DigitalOscillator();
-osc->Init(); // also allocates its 8 KB of delay lines in SDRAM
-amp.init();
-mod.init();
-svf.init();
-glide.init();
-memset(sync, 0, sizeof(sync));
-prev_gate = false;
-prev_gain = 0.0f;]]></code.init>
-      <code.krate><![CDATA[const freak::Bus &b = freak::bus();
-const bool gate = inlet_gate > 0;
-const float vel = inlet_velocity * (1.0f / (1 << 27));  // 0..1
-
-// Pitch in semitones, MIDI note numbers. Axoloti note = (MIDI - 64) << 21.
-const float note = 64.0f + inlet_note * (1.0f / (1 << 21));
-const float semis = glide.tick(note, b.glide ? b.glide_t : 0.0f) + b.pitch_mod;
-// Braids: MIDI note << 7, with tables for 96 kHz, so + 12 semitones at 48 kHz.
-int32_t p = (int32_t)((semis + 12.0f) * 128.0f);
-osc->set_pitch(p < 0 ? 0 : (p > 32767 ? 32767 : p));
-
-const float menv = mod.tick(gate, b.mod_a, b.mod_d, b.mod_s, b.mod_r, b.cycle);
-const float aenv = amp.tick(gate, b.amp_a, b.amp_d, b.amp_s, b.amp_r, false);
-
-const float timbre = freak::clampf(b.timbre + (b.modtimbre ? 0.5f * menv : 0.0f), 0.0f, 1.0f);
-osc->set_shape((braids::DigitalOscillatorShape)b.shape);
-osc->set_parameters((int16_t)(timbre * 32767.0f), (int16_t)(b.color * 32767.0f));
-if (gate && !prev_gate)
-   osc->Strike();
-prev_gate = gate;
-osc->Render(sync, buf, BUFSIZE);
-
-// Cutoff in octaves above 20 Hz: knob, key tracking (note 60 = no offset),
-// mod envelope, velocity.
-const float oct = b.cutoff_oct + (b.keytrack ? (note - 60.0f) / 12.0f : 0.0f)
-                + b.env_amt_oct * menv + (b.velcut ? 2.0f * vel : 0.0f);
-svf.set(20.0f * freak::fast_exp2(oct), b.q);
-
-// Gain: envelope x velocity (soft notes keep a quarter), / 4 headroom for
-// 3 voices, ramped across the block to avoid zipper noise.
-const float gain = aenv * (0.25f + 0.75f * vel) * 0.25f;
-const float step = (gain - prev_gain) * (1.0f / BUFSIZE);
-float g = prev_gain;
-for (int i = 0; i < BUFSIZE; i++) {
-   g += step;
-   const float y = freak::soft_clip(svf.process(buf[i] * (1.0f / 32768.0f), b.fmode));
-   outlet_wave[i] = (int32_t)(y * g * (1 << 27));
-}
-prev_gain = gain;]]></code.krate>
+      <code.declaration><![CDATA[// Trivially destructible (README: atexit). Not named "voice": the
+// polyphonic subpatch generates a class of that name.
+freak::Voice fvoice;
+float out[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[fvoice.init();]]></code.init>
+      <code.krate><![CDATA[// Axoloti note = (MIDI - 64) << 21; frac32 full scale = 1 << 27.
+fvoice.render(64.0f + inlet_note * (1.0f / (1 << 21)), inlet_gate > 0,
+             inlet_velocity * (1.0f / (1 << 27)), out);
+for (int i = 0; i < BUFSIZE; i++)
+   outlet_wave[i] = (int32_t)(out[i] * (1 << 27));]]></code.krate>
    </obj.normal>
 </objdefs>

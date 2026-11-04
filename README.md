@@ -87,6 +87,27 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
   rates) run half as fast.
 - The full Elements object (`fx/lmnts`) needs sample data on the SD card. Run
   without it, it hangs the board, and a USB replug recovers.
+- **Two buffer overruns in Ksoloti 1.1.0's Mutable Instruments code** (found
+  here, not yet reported upstream):
+  - The factory `fx/lmnts/reverb` allocates 32768 *bytes*, but its engine
+    `FxEngine<32768, FORMAT_16_BIT>` uses 32768 *16-bit words* and zero-fills
+    them. So it writes 32 KB into whatever was allocated next. freak v1's
+    delay line sat there, and that turned the output into noise.
+    `objects/fx_reverb.axo` allocates the full 64 KB.
+  - `braids/digital_oscillator.h`'s `Init()` allocates 8200 bytes for delay
+    lines that need 16384, because of the comb shape. AddressSanitizer
+    reports it on the host. `lib/braids_init.h` reserves the rest
+    contiguously; the SDRAM allocator is a bump allocator.
+  The fx/lmnts object family has the same 32 KB/64 KB pattern
+  (`ELEMENTS_SZ = 32768` for the full Elements part).
+- **Checking a patch on the board without listening:** `objects/dev/probe.axo`
+  logs RMS, peak, zero-crossing rate and saturated-sample counts over 0.9 s
+  to the patcher log. `patches/dev/chain/` probes every stage of the chain;
+  run it with `-runTest`.
+- **Checking the voice on the host:** `make render`, then
+  `./tests/render_freak out.wav <shape> <note>` renders the same voice code
+  with the real Braids oscillator, under AddressSanitizer, and prints level
+  and fundamental.
 
 ## `tools/axo_dfu`
 

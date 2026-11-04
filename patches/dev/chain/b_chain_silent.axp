@@ -1,0 +1,79 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="launchkey_ctl" name="ctl" x="14" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="ctrl/dial b" name="note" x="14" y="140">
+      <params>
+         <frac32.s.map name="value" value="-4.0"/>
+      </params>
+      <attribs/>
+   </obj>
+   <obj type="ctrl/toggle" name="gate" x="14" y="230">
+      <params>
+         <bool32.tgl name="b" value="0"/>
+      </params>
+      <attribs/>
+   </obj>
+   <obj type="ctrl/dial p" name="vel" x="14" y="300">
+      <params>
+         <frac32.u.map name="value" value="50.0"/>
+      </params>
+      <attribs/>
+   </obj>
+   <obj type="freak_voice" name="voice" x="168" y="140">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="fx_delay" name="delay" x="300" y="140">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="fx_reverb" name="reverb" x="430" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="gain/vca" name="master_l" x="600" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="dev/probe" name="probe1" x="168" y="300">
+      <params/>
+      <attribs>
+         <spinner attributeName="id" value="1"/>
+      </attribs>
+   </obj>
+   <obj type="dev/probe" name="probe2" x="300" y="300">
+      <params/>
+      <attribs>
+         <spinner attributeName="id" value="2"/>
+      </attribs>
+   </obj>
+   <obj type="dev/probe" name="probe3" x="430" y="300">
+      <params/>
+      <attribs>
+         <spinner attributeName="id" value="3"/>
+      </attribs>
+   </obj>
+   <obj type="dev/probe" name="probe4" x="600" y="300">
+      <params/>
+      <attribs>
+         <spinner attributeName="id" value="4"/>
+      </attribs>
+   </obj>
+   <nets>
+      <net><source obj="note" outlet="out"/><dest obj="voice" inlet="note"/></net>
+      <net><source obj="gate" outlet="o"/><dest obj="voice" inlet="gate"/></net>
+      <net><source obj="vel" outlet="out"/><dest obj="voice" inlet="velocity"/></net>
+      <net><source obj="voice" outlet="wave"/><dest obj="delay" inlet="in"/><dest obj="probe1" inlet="in"/></net>
+      <net><source obj="delay" outlet="l"/><dest obj="reverb" inlet="l"/><dest obj="probe2" inlet="in"/></net>
+      <net><source obj="delay" outlet="r"/><dest obj="reverb" inlet="r"/></net>
+      <net><source obj="reverb" outlet="l"/><dest obj="master_l" inlet="a"/><dest obj="probe3" inlet="in"/></net>
+      <net><source obj="ctl" outlet="master"/><dest obj="master_l" inlet="v"/></net>
+      <net><source obj="master_l" outlet="o"/><dest obj="probe4" inlet="in"/></net>
+   </nets>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+   </settings>
+   <notes><![CDATA[On-board check of the freak v1 chain: 1 voice out, 2 delay out, 3 reverb out, 4 master out. Silent.]]></notes>
+</patch-1.0>

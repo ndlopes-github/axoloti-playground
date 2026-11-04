@@ -27,3 +27,9 @@ Notes:
 - The lookup tables assume 96 kHz. At the Axoloti's 48 kHz the object
   transposes up an octave, so pitch is right. Time constants that do not
   depend on pitch (envelopes, grain rates, filter cutoffs) run 2× slower.
+
+The comb shape (2) filters its buffer in place. Braids feeds it the analog
+saw (MacroOscillator::RenderSawComb), so `lib/freak_voice.h` fills the
+buffer with a PolyBLEP saw first. It also needs the whole 16 KB delay-line
+union. Ksoloti's `Init()` allocates only 8200 bytes, so the remainder is
+reserved by `lib/braids_init.h`.

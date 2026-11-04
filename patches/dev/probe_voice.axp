@@ -1,0 +1,54 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="launchkey_ctl" name="ctl" x="14" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="ctrl/dial b" name="note" x="14" y="140">
+      <params>
+         <frac32.s.map name="value" value="-4.0"/>
+      </params>
+      <attribs/>
+   </obj>
+   <obj type="ctrl/toggle" name="gate" x="14" y="230">
+      <params>
+         <bool32.tgl name="b" value="1"/>
+      </params>
+      <attribs/>
+   </obj>
+   <obj type="ctrl/dial p" name="vel" x="14" y="300">
+      <params>
+         <frac32.u.map name="value" value="50.0"/>
+      </params>
+      <attribs/>
+   </obj>
+   <obj type="freak_voice" name="voice" x="168" y="140">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="dev/probe" name="probe" x="336" y="140">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets>
+      <net>
+         <source obj="note" outlet="out"/>
+         <dest obj="voice" inlet="note"/>
+      </net>
+      <net>
+         <source obj="gate" outlet="o"/>
+         <dest obj="voice" inlet="gate"/>
+      </net>
+      <net>
+         <source obj="vel" outlet="out"/>
+         <dest obj="voice" inlet="velocity"/>
+      </net>
+      <net>
+         <source obj="voice" outlet="wave"/>
+         <dest obj="probe" inlet="in"/>
+      </net>
+   </nets>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+   </settings>
+   <notes><![CDATA[On-board check of freak_voice: holds C4 (note dial -4 = MIDI 60) and logs signal statistics. Silent (no audio out).]]></notes>
+</patch-1.0>

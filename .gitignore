@@ -5,6 +5,8 @@ tools/axo_dfu
 *.swp
 .DS_Store
 tests/run_tests
+tests/render_freak
+*.wav
 docs/*.aux
 docs/*.log
 docs/*.fls
