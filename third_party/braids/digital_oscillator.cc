@@ -26,6 +26,11 @@
 //
 // Oscillator - digital style waveforms.
 
+// Axoloti port: size, not speed. At -O3 (the patch default) this file is 24 KB
+// of the 44 KB patch RAM; -Os makes it 17 KB. Popped at the end of the file.
+#pragma GCC push_options
+#pragma GCC optimize ("Os")
+
 #include "braids/digital_oscillator.h"
 
 #include <algorithm>
@@ -2578,3 +2583,5 @@ DigitalOscillator::RenderFn DigitalOscillator::fn_table_[] = {
 };
 
 }  // namespace braids
+
+#pragma GCC pop_options  // Axoloti port: see the top of the file

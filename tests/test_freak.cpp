@@ -255,9 +255,9 @@ static void test_knobs_never_dead() {
     k.init();
     for (int v = 64; v <= 100; v++) cc(k, 1, 22, v);  // timbre knob to 100 on SOUND
     CHECK(k.knob[PAGE_SOUND][K_TIMBRE] == 100, "timbre follows on the power-on page");
-    cc(k, 1, 19, 127);                                   // hold fader button 9: FX page
+    cc(k, 16, 107, 127);                                 // Device Lock: FX page
     for (int v = 100; v >= 20; v--) cc(k, 1, 22, v);     // the knob moves on the FX page
-    cc(k, 1, 19, 0);                                     // release: back to SOUND
+    cc(k, 16, 106, 127);                                 // Device Select: back to SOUND
     // timbre is stored at 100, the knob sits at 20: turning it down one step
     // at a time must lower timbre (scaled pickup), never leave it stuck
     int prev = k.knob[PAGE_SOUND][K_TIMBRE];
@@ -290,20 +290,75 @@ static void test_knobs_never_dead() {
     CHECK(k.knob[PAGE_SOUND][K_TIMBRE] == 60, "picked knob follows exactly");
 }
 
-// Fader button 9 is hold-for-FX; the arrows latch a page.
-static void test_page_hold() {
+// Pages: Device Select (106) / arrow up (51) = SOUND, Device Lock (107) /
+// arrow down (52) = FX; the page event names the CC.
+static void test_pages() {
     Launchkey k;
     k.init();
-    cc(k, 1, 19, 127); CHECK(k.page == PAGE_FX, "holding button 9 -> FX");
-    cc(k, 1, 19, 0);   CHECK(k.page == PAGE_SOUND, "releasing button 9 -> back to SOUND");
-    cc(k, 16, 52, 127); CHECK(k.page == PAGE_FX, "arrow down latches FX");
-    cc(k, 1, 19, 127); cc(k, 1, 19, 0); CHECK(k.page == PAGE_FX, "hold and release keeps the latched FX");
-    cc(k, 16, 51, 127); CHECK(k.page == PAGE_SOUND, "arrow up latches SOUND");
-    cc(k, 1, 19, 127); cc(k, 16, 51, 127); CHECK(k.page == PAGE_FX, "while held, FX wins over the latch");
-    cc(k, 1, 19, 0); CHECK(k.page == PAGE_SOUND, "release returns to the latched page");
-    // a held button survives a reset
-    cc(k, 1, 19, 127); cc(k, 16, 77, 127); CHECK(k.page == PAGE_FX && k.fx_hold, "reset while held stays on FX");
-    cc(k, 1, 19, 0); CHECK(k.page == PAGE_SOUND, "release after reset -> SOUND");
+    Event e;
+    cc(k, 16, 107, 127); CHECK(k.page == PAGE_FX, "Device Lock -> FX");
+    CHECK(k.pop_event(e) && e.type == EV_PAGE && e.a == PAGE_FX && e.b == 107, "page event names CC 107");
+    cc(k, 16, 107, 0); CHECK(k.page == PAGE_FX, "release changes nothing");
+    cc(k, 16, 106, 127); CHECK(k.page == PAGE_SOUND, "Device Select -> SOUND");
+    cc(k, 16, 52, 127); CHECK(k.page == PAGE_FX, "arrow down -> FX");
+    cc(k, 16, 51, 127); CHECK(k.page == PAGE_SOUND, "arrow up -> SOUND");
+    cc(k, 1, 19, 127); cc(k, 1, 19, 0); CHECK(k.page == PAGE_SOUND, "button 9 no longer changes the page");
+}
+
+// Presets: button 9 steps through them and wraps; Undo returns to preset 0.
+static void test_presets() {
+    // preset 0 is the power-on sound
+    const Preset &p0 = kPresets[0];
+    bool same = p0.shape == kInitShape && (p0.flags == P_KEYTRACK);
+    for (int g = 0; g < NUM_PAGES; g++)
+        for (int i = 1; i < 8; i++) same = same && p0.knob[g][i] == kKnobInit[g][i];
+    same = same && p0.knob[PAGE_FX][0] == kKnobInit[PAGE_FX][0];
+    for (int f = 0; f < 8; f++) same = same && p0.fader[f] == kFaderInit[f];
+    CHECK(same, "preset 0 differs from the power-on values");
+    // shape <-> knob 1 value round trip
+    for (int s = 0; s < kNumShapes; s++)
+        CHECK(((shape_knob(s) * kNumShapes) >> 7) == s && shape_knob(s) <= 127, "shape_knob(%d)", s);
+
+    Launchkey k;
+    k.init();
+    for (int v = 100; v >= 0; v--) cc(k, 1, 71, v);   // amp attack fader physically at 0
+    cc(k, 1, 79, 50);                                 // volume at 50
+    cc(k, 1, 19, 127); cc(k, 1, 19, 0);               // button 9: preset 1
+    CHECK(k.preset == 1 && k.shape == kPresets[1].shape && k.delay_on, "preset 1 applied (shape %d)", k.shape);
+    CHECK(k.fader[F_MASTER] == 50, "presets keep the volume");
+    CHECK(k.fader[F_AA] == kPresets[1].fader[F_AA] && !k.fpicked[F_AA], "attack set by the preset, fader not caught up");
+    cc(k, 1, 71, 1);  // one step up from 0: scaled, no jump to 1
+    CHECK(k.fader[F_AA] > kPresets[1].fader[F_AA] && k.fader[F_AA] < 127, "fader scaled pickup (%d)", k.fader[F_AA]);
+    for (int i = 2; i <= kNumPresets; i++) { cc(k, 1, 19, 127); cc(k, 1, 19, 0); }
+    CHECK(k.preset == 0, "button 9 wraps after %d presets (now %d)", kNumPresets, k.preset);
+    cc(k, 1, 19, 127);
+    cc(k, 16, 77, 127);
+    CHECK(k.preset == 0 && k.shape == kInitShape, "Undo -> preset 0");
+}
+
+// Dice: SOUND page values in range; amp envelope, FX page and volume kept.
+static void test_dice() {
+    Launchkey k;
+    k.init();
+    uint8_t fx[8], amp[4];
+    for (int i = 0; i < 8; i++) fx[i] = k.knob[PAGE_FX][i];
+    for (int f = 0; f < 4; f++) amp[f] = k.fader[f];
+    int shapes_seen = 0;
+    bool seen[kNumShapes] = {false};
+    for (int roll = 0; roll < 200; roll++) {
+        for (int t = 0; t < 7 + roll; t++) k.tick();
+        cc(k, 16, 74, 127);
+        const uint8_t *s = k.knob[PAGE_SOUND];
+        CHECK(k.shape >= 0 && k.shape < kNumShapes && ((s[K_SHAPE] * kNumShapes) >> 7) == k.shape, "dice shape %d", k.shape);
+        CHECK(s[K_CUTOFF] >= 50 && s[K_CUTOFF] <= 120 && s[K_RESO] <= 80 && s[K_LFOAMT] <= 50, "dice ranges");
+        CHECK(k.fmode >= 0 && k.fmode < 3 && k.lfo_wave < kNumLfoWaves && k.lfo_target < NUM_LFO_TARGETS, "dice toggles");
+        if (!seen[k.shape]) { seen[k.shape] = true; shapes_seen++; }
+    }
+    bool kept = true;
+    for (int i = 0; i < 8; i++) kept = kept && k.knob[PAGE_FX][i] == fx[i];
+    for (int f = 0; f < 4; f++) kept = kept && k.fader[f] == amp[f];
+    CHECK(kept && k.fader[F_MASTER] == kFaderInit[F_MASTER], "dice must not touch FX, amp envelope, volume");
+    CHECK(shapes_seen >= 25, "200 rolls reached only %d of 34 shapes", shapes_seen);
 }
 
 // Exhaustive check of the scaled-pickup map for every anchor (a, s).
@@ -348,7 +403,9 @@ int main() {
     test_knobs_never_dead();
     test_scaled_pickup_map();
     test_events();
-    test_page_hold();
+    test_pages();
+    test_presets();
+    test_dice();
     if (failures) {
         std::printf("%d check(s) failed\n", failures);
         return 1;

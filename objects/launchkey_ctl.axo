@@ -28,13 +28,22 @@ if ((lk.ticks & 63) == 0) {
    if (lk.pop_event(e)) {
       switch (e.type) {
       case freak::EV_PAGE:
-         LogTextMessage("freak: knob page %s", e.a == freak::PAGE_FX ? "FX" : "SOUND");
+         LogTextMessage("freak: knob page %s (CC %d)", e.a == freak::PAGE_FX ? "FX" : "SOUND", e.b);
          break;
       case freak::EV_RESET:
          LogTextMessage("freak: reset to the power-on sound");
          break;
+      case freak::EV_PRESET:
+         LogTextMessage("freak: preset %d %s", e.a, freak::kPresets[e.a].name);
+         break;
+      case freak::EV_DICE:
+         LogTextMessage("freak: dice, shape %d", e.a);
+         break;
       case freak::EV_PICKED:
-         LogTextMessage("freak: knob %d caught up on page %s at %d", e.b + 1, e.a == freak::PAGE_FX ? "FX" : "SOUND", e.c);
+         if (e.a == freak::kPickedFader)
+            LogTextMessage("freak: fader %d caught up at %d", e.b + 1, e.c);
+         else
+            LogTextMessage("freak: knob %d caught up on page %s at %d", e.b + 1, e.a == freak::PAGE_FX ? "FX" : "SOUND", e.c);
          break;
       case freak::EV_UNMAPPED:
          LogTextMessage("freak: unmapped CC %d on ch %d (value %d)", e.b, e.a, e.c);

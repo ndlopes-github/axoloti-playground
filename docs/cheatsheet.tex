@@ -98,6 +98,10 @@
   \pad{0}{0}{8 VOSIM}      \pad{1}{0}{9 vowel}    \pad{2}{0}{10 vowel\\FOF} \pad{3}{0}{11 harmo-\\nics}
   \pad{4}{0}{12 FM}        \pad{5}{0}{13 fdbk\\FM}  \pad{6}{0}{14 chaotic\\FM} \pad{7}{0}{15 plucked}
   \node[font=\fontsize{5}{6}\selectfont, text=black!55, anchor=west] at (36,19) {PADS = SHAPES (bank 1 shown; bank 2 = +16, table below)};
+  % Device Select / Device Lock (CC 106/107): the knob pages
+  \btn{31.4}{41.2}{\textbf{SOUND}\\page}{black}{7.4}
+  \btn{31.4}{28}{\textbf{\FX{FX}}\\page}{fxc}{7.4}
+  \node[font=\fontsize{4.2}{4.6}\selectfont, text=black!50, align=center] at (31.4,34.6) {Dev.\,Sel.\\[-0.5mm]Dev.\,Lock};
   \draw[fill=padc!30!white, draw=padc!80!black] (147,40.2) circle (3.1);
   \draw[fill=padc!30!white, draw=padc!80!black] (147,27.8) circle (3.1);
   \node[font=\fontsize{4.9}{5.4}\selectfont, align=center] at (147,40.2) {BANK\\[-0.8mm]1};
@@ -118,12 +122,12 @@
   \btn{206}{17}{\textcolor{fltc}{KEY}\\TRACK}{fltc}{7.4}
   \btn{214}{17}{\textcolor{fltc}{VELO}\\\(\to\)CUT}{fltc}{7.4}
   \btn{222}{17}{\FX{DELAY}\\on/off}{fxc}{7.4}
-  \btn{233}{17}{\textbf{HOLD}\\= FX page}{fxc}{7.4}
+  \btn{233}{17}{\textbf{NEXT}\\PRESET}{black}{7.4}
   \node[font=\fontsize{4.6}{5}\selectfont, text=black!50, anchor=west] at (160,10.5) {buttons under the faders: each press toggles or steps to the next option};
 
   % ---- transport (ch 16)
   \node[font=\fontsize{5}{6}\selectfont, text=black!55] at (263,60) {transport};
-  \btn{249}{52}{Capture\\\cc{74}}{freec}{8.5}
+  \btn{249}{52}{\textbf{DICE}\\\cc{74 Capture}}{lfoc}{8.5}
   \btn{258.5}{52}{Quantise\\\cc{75}}{freec}{8.5}
   \btn{268}{52}{\textcolor{lfoc}{TAP LFO}\\\cc{76 Click}}{lfoc}{8.5}
   \btn{277.5}{52}{RESET\\\cc{77 Undo}}{black}{8.5}
@@ -151,8 +155,8 @@
 \FX{REV AMT/TIME/DIFF/LP} & Elements reverb, 0 -- 1 each \\
 \end{tabularx}
 \vspace{0.6mm}
-\textbf{FX page: hold fader button 9} and turn, like a Shift key; let go and you are back on SOUND.
-To stay on FX hands-free, \(\blacktriangledown\) latches it and \(\blacktriangle\) returns to SOUND.
+\textbf{Page: Device Select = SOUND, Device Lock = FX} (the two buttons left of the pads;
+\(\blacktriangle\)/\(\blacktriangledown\) by the knobs do the same). A press always lands on a known page.
 After a page change or RESET, a knob that is not where its value is still works: the value moves
 \emph{proportionally} the way you turn and meets the knob at an end of travel at the latest. No jumps, no dead knobs.
 FX knobs 1--4 are silent until GLIDE or DELAY is on.
@@ -194,9 +198,10 @@ Top row = first 8, bottom row = next 8. 32 particle noise and 33 digital modulat
 are struck on each key press.
 \end{card}
 \begin{card}{Notes}
-3 voices (a 4th note takes the oldest voice). Power-on: saw swarm, LP, key tracking on, delay off.
-RESET (Undo) restores that sound. The toggles' states are \textbf{not shown} yet (no LEDs in standalone
-mode). Each press moves to the next option, so count, or listen. Page 2: shapes, dial values, starting points.
+3 voices (a 4th note takes the oldest voice). \textbf{NEXT PRESET} (fader button 9) steps through
+8 presets (page 2); \textbf{RESET} (Undo) is preset 0, the power-on sound; \textbf{DICE} (Capture MIDI)
+rolls a random SOUND page and keeps envelope, FX and volume. Controls left behind by a preset or a roll
+pick up smoothly. Toggle states are \textbf{not shown} yet (no LEDs in standalone mode).
 \end{card}
 \end{minipage}\hfill
 \begin{minipage}[t]{63mm}\vspace{0pt}
@@ -212,14 +217,14 @@ minor/major pentatonic.\\
 \begin{card}{Signal path and load}
 3 \(\times\) (Braids \(\to\) SVF \(\to\) amp env \(\times\) velocity) \(\to\) delay \(\to\)
 Elements reverb \(\to\) VOL. Velocity: soft notes keep \(\frac14\) of the level.
-DSP 54.5\,\%, patch RAM 43 of 44 KB (Axoloti Core, Ksoloti 1.1.0).
+DSP 57\,\%, patch RAM 40 of 44 KB (Axoloti Core, Ksoloti 1.1.0).
 \end{card}
 \end{minipage}
 
 %======================================================================
 \newpage
 {\fontsize{16}{18}\selectfont\bfseries freak}\hspace{3mm}%
-{\fontsize{9.5}{11}\selectfont shapes, dial values, starting points, troubleshooting}\hfill
+{\fontsize{9.5}{11}\selectfont shapes, dial values, presets, troubleshooting}\hfill
 {\fontsize{7}{8}\selectfont\color{black!55} v1.1 \textperiodcentered{} page 2 of 2}
 
 \vspace{1.5mm}
@@ -273,21 +278,23 @@ Plucked, bowed, bell, drum, kick, cymbal and snare are struck on each new key: S
 Time constants inside Braids that do not follow pitch (grain rates, built-in decays) run at half the original speed.
 \end{card}
 
-\begin{card}{Starting points \quad\textmd{\fontsize{6.5}{7}\selectfont (not yet tried by ear: adjust to taste; fractions = how far a knob/fader is turned)}}
-\fontsize{7.4}{9.0}\selectfont
+\begin{card}{Presets: NEXT PRESET (fader button 9) steps 0\(\to\)7\(\to\)0, RESET (Undo) = 0 \quad\textmd{\fontsize{6.5}{7}\selectfont (chosen from the parameter meanings, not yet tuned by ear)}}
+\fontsize{7.2}{8.7}\selectfont
 \begin{tabularx}{\linewidth}{@{}>{\bfseries}l L@{}}
-Vowel pad (nu-jazz) & shape 10 vowel FOF; TIMBRE 1/2, COLOR 1/2; LFO\(\to\)timbre, sine, RATE 1/4 (0.2 Hz), AMT 1/3;
-amp A 2/3, S 3/4, R 3/4; CUTOFF 3/4; FX: DELAY on, TIME 1/2, FDBK 1/3, MIX 1/4; REV AMT 1/2. \\
-FM bass (broken beat) & shape 12 FM, play an octave down; TIMBRE 1/4, COLOR 1/2; amp A 0, D 1/2, S 0, R 1/4;
-CUTOFF 1/3, RESO 1/4, ENV AMT 3/4, mod D 1/2; VELO\(\to\)CUT on; GLIDE on with GLIDE 1/4 for slides. \\
-Glass mallets & shape 19 bell; TIMBRE 1/3, COLOR 1/4; amp S full, R 3/4; filter HP (press FILTER twice), CUTOFF 1/4;
-REV AMT 3/4, TIME 3/4. \\
-Chord stabs & shape 27 paraphonic: every key plays a chord, COLOR picks it; Launchkey Scale mode Dorian keeps it modal;
-amp D 1/2, S 0; DELAY on, TIME 3/4, FDBK 1/2 for dub echoes. \\
-Granular weather & shape 31 granular; TIMBRE 1/2, COLOR 3/4; LFO\(\to\)color (TARGET once), S\&H (WAVE 4 times),
-tap the tempo; CYCLE (Loop) on with ENV AMT 3/4, filter BP: rhythmic swells. \\
-Pitched rain & shape 32 particles (\(\blacktriangleright\) from 31); TIMBRE 1/4, COLOR full; DELAY on, FDBK 3/4; REV AMT 3/4. \\
-\end{tabularx}
+0 init & saw swarm, LP, key tracking; delay off. The power-on sound. \\
+1 vowel pad & vowel FOF; attack 0.5 s, release 1 s; LFO\(\to\)timbre, sine, 0.2 Hz, 1/3 deep; cutoff 3.6 kHz;
+delay 0.12 s (fdbk 0.3, mix 1/4), reverb 1/2. Nu-jazz pads. \\
+2 FM bass & FM, light modulation; plucky amp (decay 0.1 s, no sustain); low-pass at 200 Hz (note 60) opened
++2.5 oct by the mod env; velocity\(\to\)cutoff; 60 ms glide. Play low: broken-beat bass. \\
+3 glass mallets & bell, long ring, nearly harmonic; high-pass at 113 Hz; release 1 s; big reverb. \\
+4 chord stabs & paraphonic: each key plays a chord (COLOR picks it); short stabs; delay 0.43 s, fdbk 0.48. \\
+5 granular weather & granular, random grain pitch; band-pass; LFO S\&H\(\to\)color; CYCLE on: swelling, shifting texture. \\
+6 pitched rain & particles, wide pitch spread; long delay feedback (0.71), big reverb. \\
+7 chaotic drone & chaotic FM; attack 0.7 s, release 1.4 s; band-pass with a slow triangle LFO (0.13 Hz) on cutoff;
+CYCLE on; long delay and reverb. Hold a chord. \\
+\end{tabularx}\\[0.3mm]
+A preset changes both knob pages, faders 1--8, the shape and the toggles; the volume stays. \textbf{DICE}
+(Capture MIDI) rolls a random SOUND page instead. Controls that a preset or roll left behind pick up smoothly.
 \end{card}
 \end{minipage}\hfill
 \begin{minipage}[t]{112mm}\vspace{0pt}
@@ -313,7 +320,7 @@ Times are exponential: each quarter of the travel is a factor of 10. S, TIMBRE, 
 \fontsize{7.5}{9.2}\selectfont
 \textbf{No sound}: VOL (fader 9) up? CUTOFF (knob 4) not at the bottom in LP, nor at the top in HP?
 A struck shape (pluck, bell, drums) only sounds on a new key. Is the patch running (Live / startup)?\\[0.4mm]
-\textbf{Knobs do nothing}: are you holding button 9 (FX page)? Did \(\blacktriangledown\) latch FX? Press \(\blacktriangle\).
+\textbf{Knobs do nothing}: on the FX page? Press Device Select (or \(\blacktriangle\)).
 FX knobs 1--4 need GLIDE / DELAY on.\\[0.4mm]
 \textbf{Wobbles or detunes}: LFO AMT (knob 8) or the mod wheel; TARGET may be on pitch.\\[0.4mm]
 \textbf{A note drops out}: 3 voices; a 4th note takes the oldest.\\[0.4mm]
@@ -332,7 +339,8 @@ faders 1--9 & ch 1 CC 71--79 \\
 fader buttons 1--9 & ch 1 CC 11--19 (127 press, 0 release) \\
 pads & ch 10 notes 36--51 \\
 arrows \(\blacktriangle\)/\(\blacktriangledown\), track \(\blacktriangleleft\)/\(\blacktriangleright\) & ch 16 CC 51/52, 102/103 \\
-round buttons, Click, Undo, Loop & ch 16 CC 104/105, 76, 77, 118 \\
+Device Select / Lock (pages) & ch 16 CC 106/107 \\
+round buttons, Capture, Click, Undo, Loop & ch 16 CC 104/105, 74, 76, 77, 118 \\
 \end{tabular}\\[0.4mm]
 Recorded from this unit (\texttt{docs/launchkey49mk3\_map.md}).
 \end{card}

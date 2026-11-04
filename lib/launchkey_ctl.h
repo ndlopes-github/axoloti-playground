@@ -7,7 +7,7 @@
 //         CC 1 mod wheel      pitch bend          notes = keys (played by the voices)
 //   ch 10 notes 36-51 pads (top row 40-43 48-51, bottom row 36-39 44-47)
 //   ch 16 CC 51/52 arrows by the knobs, 102/103 track < >, 104/105 round
-//         buttons right of the pads, 106/107 left of the pads,
+//         buttons right of the pads, 106/107 Device Select / Device Lock (left of the pads),
 //         74-77 and 115-118 the two transport rows
 //
 // The result goes on a control bus (freak::bus()) read by the voices and the
@@ -57,13 +57,13 @@ enum { K_SHAPE, K_TIMBRE, K_COLOR, K_CUTOFF, K_RESO, K_ENVAMT, K_LFORATE, K_LFOA
 enum { K_GLIDE, K_DTIME, K_DFB, K_DMIX, K_RAMOUNT, K_RTIME, K_RDIFF, K_RLP };
 // Faders 1..9
 enum { F_AA, F_AD, F_AS, F_AR, F_MA, F_MD, F_MS, F_MR, F_MASTER, NUM_FADERS };
-// Fader buttons 1..9
-enum { B_FMODE, B_LFOTGT, B_LFOWAVE, B_MODTIMBRE, B_GLIDE, B_KEYTRACK, B_VELCUT, B_DELAY, B_PAGE };
+// Fader buttons 1..9 (button 9 steps through the presets)
+enum { B_FMODE, B_LFOTGT, B_LFOWAVE, B_MODTIMBRE, B_GLIDE, B_KEYTRACK, B_VELCUT, B_DELAY, B_PRESET };
 
 enum { LFO_TIMBRE, LFO_COLOR, LFO_CUTOFF, LFO_PITCH, NUM_LFO_TARGETS };
 const int kNumLfoWaves = 5;  // sine, triangle, saw, square, sample & hold
 
-// Power-on values (0..127, as a knob or fader would send).
+// Power-on values (0..127, as a knob or fader would send) = preset 0.
 static const uint8_t kKnobInit[NUM_PAGES][8] = {
     {0, 64, 64, 100, 20, 80, 40, 0},  // shape, timbre, color, cutoff, reso, env amt, lfo rate, lfo amt
     {24, 70, 50, 40, 40, 64, 64, 80}, // glide, delay time, fb, mix, reverb amount, time, diffusion, lowpass
@@ -71,10 +71,45 @@ static const uint8_t kKnobInit[NUM_PAGES][8] = {
 static const uint8_t kFaderInit[NUM_FADERS] = {10, 70, 90, 70, 0, 70, 0, 70, 100};
 const int kInitShape = 1;  // saw swarm
 
+// Presets (fader button 9 steps through them, Undo returns to 0). A preset
+// sets both knob pages, the 8 envelope faders, the shape and the toggles; the
+// volume fader is not part of a preset. The SOUND knob 1 value is derived
+// from the shape. These are the cheat sheet's starting points: chosen from
+// the parameter meanings, not yet tuned by ear.
+enum { P_MODTIMBRE = 1, P_GLIDE = 2, P_KEYTRACK = 4, P_VELCUT = 8, P_DELAY = 16, P_CYCLE = 32 };
+struct Preset {
+    const char *name;
+    uint8_t shape;
+    uint8_t knob[NUM_PAGES][8];
+    uint8_t fader[8];  // amp A D S R, mod A D S R
+    uint8_t fmode, lfo_target, lfo_wave, flags;
+};
+static const Preset kPresets[] = {
+    {"init", 1, {{0, 64, 64, 100, 20, 80, 40, 0}, {24, 70, 50, 40, 40, 64, 64, 80}},
+     {10, 70, 90, 70, 0, 70, 0, 70}, 0, LFO_TIMBRE, 0, P_KEYTRACK},
+    {"vowel pad", 10, {{0, 64, 64, 95, 20, 70, 32, 42}, {0, 64, 42, 32, 64, 80, 80, 80}},
+     {85, 70, 95, 95, 0, 70, 0, 70}, 0, LFO_TIMBRE, 0, P_KEYTRACK | P_DELAY},
+    {"FM bass", 12, {{0, 32, 64, 42, 32, 95, 40, 0}, {32, 64, 20, 0, 20, 40, 40, 64}},
+     {0, 64, 0, 32, 0, 64, 0, 32}, 0, LFO_TIMBRE, 0, P_KEYTRACK | P_VELCUT | P_GLIDE},
+    {"glass mallets", 19, {{0, 42, 32, 32, 20, 64, 40, 0}, {0, 64, 40, 20, 95, 95, 80, 80}},
+     {5, 90, 127, 95, 0, 70, 0, 70}, 2, LFO_TIMBRE, 0, P_KEYTRACK},
+    {"chord stabs", 27, {{0, 64, 64, 100, 20, 64, 40, 0}, {0, 95, 64, 40, 40, 64, 64, 80}},
+     {0, 64, 0, 50, 0, 70, 0, 70}, 0, LFO_TIMBRE, 0, P_KEYTRACK | P_DELAY},
+    {"granular weather", 31, {{0, 64, 95, 90, 30, 95, 40, 60}, {0, 70, 50, 30, 80, 90, 80, 70}},
+     {40, 70, 100, 90, 10, 64, 0, 64}, 1, LFO_COLOR, 4, P_KEYTRACK | P_CYCLE},
+    {"pitched rain", 32, {{0, 32, 127, 100, 20, 64, 40, 0}, {0, 80, 95, 50, 95, 90, 90, 90}},
+     {0, 70, 100, 80, 0, 70, 0, 70}, 0, LFO_TIMBRE, 0, P_KEYTRACK | P_DELAY},
+    {"chaotic drone", 14, {{0, 50, 70, 80, 60, 80, 20, 40}, {0, 100, 80, 40, 90, 110, 100, 60}},
+     {90, 90, 110, 100, 60, 80, 50, 90}, 1, LFO_CUTOFF, 1, P_KEYTRACK | P_DELAY | P_CYCLE},
+};
+const int kNumPresets = sizeof(kPresets) / sizeof(kPresets[0]);
+
 // Events for the patcher log (launchkey_ctl.axo prints them), to debug the
-// mapping on the board: page changes, resets, knobs catching up, and CCs the
-// mapping does not handle (each (channel, CC) once).
-enum { EV_PAGE, EV_RESET, EV_PICKED, EV_UNMAPPED };
+// mapping on the board: page changes (with the CC that caused them), resets,
+// presets, dice rolls, controls catching up, and CCs the mapping does not
+// handle (each (channel, CC) once).
+enum { EV_PAGE, EV_RESET, EV_PICKED, EV_UNMAPPED, EV_PRESET, EV_DICE };
+const uint8_t kPickedFader = 2;  // EV_PICKED a: page 0/1 for knobs, 2 for faders
 struct Event { uint8_t type, a, b, c; };
 const int kEventQueue = 16;
 
@@ -83,6 +118,10 @@ inline float unit(uint8_t v) { return (float)v * (1.0f / 127.0f); }
 // Envelope time: 1 ms * 10^(4 v/127), so 1 ms .. 10 s, a decade per 32 steps.
 inline float env_time(uint8_t v) { return 0.001f * fast_exp2(13.2877124f * unit(v)); }  // log2(10^4)
 
+// SOUND knob 1 value for a shape: v = ceil(128 s / 34). Then
+// 34 v / 128 lies in [s, s + 34/128), so the knob map (34 v) >> 7 gives s back.
+inline uint8_t shape_knob(int s) { return (uint8_t)((s * 128 + kNumShapes - 1) / kNumShapes); }
+
 struct Launchkey {
     uint8_t knob[NUM_PAGES][8];
     bool picked[NUM_PAGES][8];
@@ -90,10 +129,14 @@ struct Launchkey {
     uint8_t anchor_val[NUM_PAGES][8];   // stored value at that moment
     uint8_t phys[8];     // last position of each physical knob
     bool phys_known[8];
-    uint8_t fader[NUM_FADERS];
-    int page;          // the page in use: FX while fader button 9 is held, else latched_page
-    int latched_page;  // set by the arrows by the knobs
-    bool fx_hold;      // fader button 9 held down
+    uint8_t fader[NUM_FADERS];          // faders use the same scaled pickup
+    bool fpicked[NUM_FADERS];
+    int16_t fanchor_phys[NUM_FADERS];
+    uint8_t fanchor_val[NUM_FADERS];
+    uint8_t fphys[NUM_FADERS];
+    bool fphys_known[NUM_FADERS];
+    int page;
+    int preset;
     int shape;
     int fmode, lfo_target, lfo_wave;
     bool modtimbre, glide, keytrack, velcut, delay_on, cycle;
@@ -101,7 +144,9 @@ struct Launchkey {
     float modwheel;      // 0..1
     float lfo_hz;        // set by knob 7 or by tap tempo, whichever was last
     uint32_t ticks, last_tap;
+    uint32_t rng;        // dice
     Lfo lfo;
+    int pad_bank;
     Event events[kEventQueue];
     uint8_t ev_head, ev_count;
     uint32_t unmapped_seen[16][4];  // bit (ch, cc): already reported
@@ -127,106 +172,177 @@ struct Launchkey {
         push_event(EV_UNMAPPED, (uint8_t)(ch + 1), num, v);
     }
 
+    // The sound part of a preset: knob values, envelope faders, shape, toggles.
+    void load(const Preset &p) {
+        for (int g = 0; g < NUM_PAGES; g++)
+            for (int k = 0; k < 8; k++) knob[g][k] = p.knob[g][k];
+        knob[PAGE_SOUND][K_SHAPE] = shape_knob(p.shape);
+        for (int f = 0; f < 8; f++) fader[f] = p.fader[f];
+        shape = p.shape;
+        fmode = p.fmode; lfo_target = p.lfo_target; lfo_wave = p.lfo_wave;
+        modtimbre = p.flags & P_MODTIMBRE; glide = p.flags & P_GLIDE; keytrack = p.flags & P_KEYTRACK;
+        velcut = p.flags & P_VELCUT; delay_on = p.flags & P_DELAY; cycle = p.flags & P_CYCLE;
+        lfo_hz = lfo_rate(knob[PAGE_SOUND][K_LFORATE]);
+    }
+
     void init() {
-        for (int p = 0; p < NUM_PAGES; p++)
+        for (int g = 0; g < NUM_PAGES; g++)
             for (int k = 0; k < 8; k++) {
-                knob[p][k] = kKnobInit[p][k];
-                picked[p][k] = (p == PAGE_SOUND);  // power-on page: knobs jump
-                anchor_phys[p][k] = -1;
-                anchor_val[p][k] = knob[p][k];
+                picked[g][k] = (g == PAGE_SOUND);  // power-on page: knobs jump
+                anchor_phys[g][k] = -1;
             }
         for (int k = 0; k < 8; k++) { phys[k] = 0; phys_known[k] = false; }
-        for (int f = 0; f < NUM_FADERS; f++) fader[f] = kFaderInit[f];
+        for (int f = 0; f < NUM_FADERS; f++) {
+            fpicked[f] = true;  // power-on: faders jump
+            fanchor_phys[f] = -1;
+            fphys[f] = 0;
+            fphys_known[f] = false;
+        }
+        fader[F_MASTER] = kFaderInit[F_MASTER];
+        preset = 0;
+        load(kPresets[0]);
+        for (int g = 0; g < NUM_PAGES; g++)
+            for (int k = 0; k < 8; k++) anchor_val[g][k] = knob[g][k];
+        for (int f = 0; f < NUM_FADERS; f++) fanchor_val[f] = fader[f];
         page = PAGE_SOUND;
-        latched_page = PAGE_SOUND;
-        fx_hold = false;
         pad_bank = 0;
-        shape = kInitShape;
-        fmode = 0; lfo_target = LFO_TIMBRE; lfo_wave = 0;
-        modtimbre = false; glide = false; keytrack = true; velcut = false;
-        delay_on = false; cycle = false;
         bend = 0.0f; modwheel = 0.0f;
-        lfo_hz = lfo_rate(knob[PAGE_SOUND][K_LFORATE]);
         ticks = 0; last_tap = 0;
+        rng = 0x9E3779B9u;
         lfo.init();
         ev_head = ev_count = 0;
         for (int c = 0; c < 16; c++)
             for (int w = 0; w < 4; w++) unmapped_seen[c][w] = 0;
     }
 
-    // Reset to the power-on sound, keeping the page. Knobs whose stored value
-    // moved away from the physical position must be picked up again.
+    // After values change under the controls (page switch, preset, dice,
+    // reset): a control more than 2 steps from its value is "not caught up"
+    // and uses scaled pickup, anchored where it physically is.
+    void reanchor_knobs(int g) {
+        for (int k = 0; k < 8; k++) {
+            const int d = (int)phys[k] - (int)knob[g][k];
+            picked[g][k] = phys_known[k] && d >= -2 && d <= 2;
+            anchor_phys[g][k] = phys_known[k] ? phys[k] : -1;
+            anchor_val[g][k] = knob[g][k];
+        }
+    }
+    void reanchor_faders() {
+        for (int f = 0; f < 8; f++) {  // not the volume fader: presets keep it
+            const int d = (int)fphys[f] - (int)fader[f];
+            fpicked[f] = fphys_known[f] && d >= -2 && d <= 2;
+            fanchor_phys[f] = fphys_known[f] ? fphys[f] : -1;
+            fanchor_val[f] = fader[f];
+        }
+    }
+
+    void apply_preset(int i) {
+        preset = i;
+        load(kPresets[i]);
+        reanchor_knobs(page);  // the other page is re-anchored when it comes up
+        reanchor_faders();
+    }
+
+    // Undo: back to the power-on sound (preset 0), keeping page and volume.
     void reset_sound() {
-        const int p = page, lp = latched_page;
-        const bool hold = fx_hold;
-        const uint8_t ph[8] = {phys[0], phys[1], phys[2], phys[3], phys[4], phys[5], phys[6], phys[7]};
-        bool known[8];
-        for (int k = 0; k < 8; k++) known[k] = phys_known[k];
-        const uint32_t t = ticks;
-        init();
-        for (int k = 0; k < 8; k++) { phys[k] = ph[k]; phys_known[k] = known[k]; }
-        ticks = t;
-        latched_page = lp;
-        fx_hold = hold;
-        page = p;  // the page does not change on a reset: no page event
-        set_page(p);
+        apply_preset(0);
         push_event(EV_RESET, 0, 0, 0);
+    }
+
+    // Fader button 9: the next preset, wrapping around.
+    void next_preset() {
+        apply_preset((preset + 1) % kNumPresets);
+        push_event(EV_PRESET, (uint8_t)preset, 0, 0);
+    }
+
+    // Dice (Capture MIDI button): a random SOUND page within musical ranges.
+    // Amp envelope, FX page and volume are left alone, so it stays playable;
+    // Undo gets the power-on sound back. Seeded by the press time.
+    uint32_t rnd() {
+        rng ^= rng << 13;
+        rng ^= rng >> 17;
+        rng ^= rng << 5;
+        return rng;
+    }
+    int rnd_in(int lo, int hi) { return lo + (int)(rnd() % (uint32_t)(hi - lo + 1)); }
+    void dice() {
+        rng ^= ticks * 2654435761u;
+        if (rng == 0) rng = 1;
+        shape = rnd_in(0, kNumShapes - 1);
+        uint8_t *s = knob[PAGE_SOUND];
+        s[K_SHAPE] = shape_knob(shape);
+        s[K_TIMBRE] = (uint8_t)rnd_in(0, 127);
+        s[K_COLOR] = (uint8_t)rnd_in(0, 127);
+        s[K_CUTOFF] = (uint8_t)rnd_in(50, 120);
+        s[K_RESO] = (uint8_t)rnd_in(0, 80);
+        s[K_ENVAMT] = (uint8_t)rnd_in(30, 115);
+        s[K_LFORATE] = (uint8_t)rnd_in(0, 100);
+        s[K_LFOAMT] = (uint8_t)rnd_in(0, 50);
+        static const uint8_t modes[4] = {0, 0, 1, 2};  // low-pass half of the time
+        fmode = modes[rnd_in(0, 3)];
+        lfo_target = rnd_in(0, NUM_LFO_TARGETS - 1);
+        lfo_wave = rnd_in(0, kNumLfoWaves - 1);
+        modtimbre = rnd_in(0, 1);
+        velcut = rnd_in(0, 1);
+        cycle = rnd_in(0, 3) == 0;
+        lfo_hz = lfo_rate(s[K_LFORATE]);
+        if (page == PAGE_SOUND) reanchor_knobs(PAGE_SOUND);
+        push_event(EV_DICE, (uint8_t)shape, 0, 0);
     }
 
     // LFO rate: 0.05 Hz * 400^(v/127), so 0.05 .. 20 Hz.
     static float lfo_rate(uint8_t v) { return 0.05f * fast_exp2(8.64385619f * unit(v)); }  // log2(400)
 
-    // Page switch (and reset): a knob whose physical position differs from
-    // the stored value by more than 2 steps is "not caught up". It then uses
-    // scaled pickup (on_knob), anchored where it was when the page came up.
-    void set_page(int p) {
-        if (p != page) push_event(EV_PAGE, (uint8_t)p, 0, 0);
+    // Page select: Device Select (CC 106) or arrow up (51) = SOUND, Device
+    // Lock (107) or arrow down (52) = FX. src: the CC, for the log.
+    void set_page(int p, uint8_t src) {
+        if (p != page) push_event(EV_PAGE, (uint8_t)p, src, 0);
         page = p;
-        for (int k = 0; k < 8; k++) {
-            const int d = (int)phys[k] - (int)knob[p][k];
-            picked[p][k] = phys_known[k] && d >= -2 && d <= 2;
-            anchor_phys[p][k] = phys_known[k] ? phys[k] : -1;
-            anchor_val[p][k] = knob[p][k];
-        }
+        reanchor_knobs(p);
     }
 
-    // Scaled pickup. With the anchor (a, s) = (knob position, stored value)
+    // Scaled pickup. With the anchor (a, s) = (control position, stored value)
     // at the start of the pickup, the value is
     //   f(v) = s + (v - a)(127 - s)/(127 - a)  for v >= a,
     //   f(v) = s - (a - v) s / a               for v <= a.
     // f is continuous and nondecreasing, f(a) = s, f(0) = 0, f(127) = 127. So
-    // the value always moves the way the knob turns (no dead knob), there is
-    // no jump, and knob and value meet at an end of travel at the latest;
-    // they are caught up as soon as |f(v) - v| <= 1. Computing f from the
-    // anchor, not step by step, keeps one-step turns from rounding to zero.
+    // the value always moves the way the control turns (no dead control), there
+    // is no jump, and control and value meet at an end of travel at the latest;
+    // they are caught up as soon as |f(v) - v| <= 1. Both branches round away
+    // from s (a ceiling of a nondecreasing function, so still nondecreasing),
+    // so the first step from the anchor always moves the value. Computing f
+    // from the anchor, not step by step, keeps slow turns from rounding to zero.
     static int scaled(int v, int a, int s) {
-        if (v >= a) return a >= 127 ? s : s + (v - a) * (127 - s) / (127 - a);
-        return a <= 0 ? s : s - ((a - v) * s + a - 1) / a;  // round away from s: a step always moves
+        if (v >= a) return a >= 127 ? s : s + ((v - a) * (127 - s) + (127 - a) - 1) / (127 - a);
+        return a <= 0 ? s : s - ((a - v) * s + a - 1) / a;
+    }
+
+    // One control under scaled pickup. Returns true at the step it catches up.
+    // At that step the value stays at f (setting v could step back against the
+    // turn); afterwards it follows exactly.
+    static bool follow(uint8_t &val, bool &picked, int16_t &anchor, uint8_t &aval, uint8_t v) {
+        if (picked) { val = v; return false; }
+        if (anchor < 0) { anchor = v; aval = val; }  // first position seen
+        const int f = scaled(v, anchor, aval);
+        val = (uint8_t)f;
+        if (f - (int)v >= -1 && f - (int)v <= 1) { picked = true; return true; }
+        return false;
     }
 
     void on_knob(int k, uint8_t v) {
         const int p = page;
-        if (!picked[p][k]) {
-            if (anchor_phys[p][k] < 0) {  // first position seen on this page
-                anchor_phys[p][k] = v;
-                anchor_val[p][k] = knob[p][k];
-            }
-            // Caught up within one step: keep f for this step (setting v
-            // could step back against the turn), follow exactly from now on.
-            const int f = scaled(v, anchor_phys[p][k], anchor_val[p][k]);
-            const int d = f - (int)v;
-            if (d >= -1 && d <= 1) {
-                picked[p][k] = true;
-                push_event(EV_PICKED, (uint8_t)p, (uint8_t)k, (uint8_t)f);
-            }
-            knob[p][k] = (uint8_t)f;
-        } else {
-            knob[p][k] = v;
-        }
+        if (follow(knob[p][k], picked[p][k], anchor_phys[p][k], anchor_val[p][k], v))
+            push_event(EV_PICKED, (uint8_t)p, (uint8_t)k, knob[p][k]);
         phys[k] = v;
         phys_known[k] = true;
         if (p == PAGE_SOUND && k == K_SHAPE) shape = (knob[p][k] * kNumShapes) >> 7;  // 0..33
         if (p == PAGE_SOUND && k == K_LFORATE) lfo_hz = lfo_rate(knob[p][k]);
+    }
+
+    void on_fader(int f, uint8_t v) {
+        if (follow(fader[f], fpicked[f], fanchor_phys[f], fanchor_val[f], v))
+            push_event(EV_PICKED, kPickedFader, (uint8_t)f, fader[f]);
+        fphys[f] = v;
+        fphys_known[f] = true;
     }
 
     // Tap tempo (Click button): two taps 0.1..4 s apart set the LFO period.
@@ -247,24 +363,12 @@ struct Launchkey {
         case B_KEYTRACK: keytrack = !keytrack; break;
         case B_VELCUT: velcut = !velcut; break;
         case B_DELAY: delay_on = !delay_on; break;
+        case B_PRESET: next_preset(); break;
         }
-    }
-
-    // Fader button 9 is a hold-for-FX key, like Shift: the FX page only
-    // while it is held, so the page in use is always known without a display.
-    // The arrows latch a page for hands-free FX work.
-    void on_page_button(bool down) {
-        fx_hold = down;
-        set_page(fx_hold ? PAGE_FX : latched_page);
-    }
-    void on_arrow(int p) {
-        latched_page = p;
-        set_page(fx_hold ? PAGE_FX : latched_page);
     }
 
     // Pads: top row = shapes 0..7, bottom row = 8..15; the round button right
     // of the pads (104 upper, 105 lower) selects bank 0 or 1 (+16).
-    int pad_bank;
     static int pad_index(uint8_t note) {  // -1 if not a pad
         static const int8_t idx[16] = {8, 9, 10, 11, 0, 1, 2, 3, 12, 13, 14, 15, 4, 5, 6, 7};  // note 36..51
         return (note >= 36 && note <= 51) ? idx[note - 36] : -1;
@@ -275,9 +379,8 @@ struct Launchkey {
         const uint8_t type = status & 0xF0, ch = status & 0x0F;
         if (type == 0xB0 && ch == 0) {
             if (d1 >= 21 && d1 <= 28) on_knob(d1 - 21, d2);
-            else if (d1 >= 71 && d1 <= 79) fader[d1 - 71] = d2;
-            else if (d1 == 11 + B_PAGE) on_page_button(d2 > 0);  // press and release
-            else if (d1 >= 11 && d1 <= 18) { if (d2 > 0) on_button(d1 - 11); }
+            else if (d1 >= 71 && d1 <= 79) on_fader(d1 - 71, d2);
+            else if (d1 >= 11 && d1 <= 19) { if (d2 > 0) on_button(d1 - 11); }
             else if (d1 == 1) modwheel = unit(d2);
             else unmapped(ch, d1, d2);
         } else if (type == 0xB0 && ch != 15) {
@@ -289,16 +392,17 @@ struct Launchkey {
             if (i >= 0) shape = pad_bank * 16 + i;
         } else if (type == 0xB0 && ch == 15 && d2 > 0) {
             switch (d1) {
-            case 51: on_arrow(PAGE_SOUND); break;   // arrow up
-            case 52: on_arrow(PAGE_FX); break;      // arrow down
+            case 51: case 106: set_page(PAGE_SOUND, d1); break;  // arrow up, Device Select
+            case 52: case 107: set_page(PAGE_FX, d1); break;     // arrow down, Device Lock
             case 102: shape = shape > 0 ? shape - 1 : kNumShapes - 1; break;  // track <
             case 103: shape = shape < kNumShapes - 1 ? shape + 1 : 0; break;  // track >
             case 104: pad_bank = 0; break;
             case 105: pad_bank = 1; break;
+            case 74: dice(); break;                 // Capture MIDI: dice
             case 76: on_tap(); break;               // Click: tap tempo
             case 77: reset_sound(); break;          // Undo: back to the power-on sound
             case 118: cycle = !cycle; break;        // Loop: cycling mod envelope
-            case 74: case 75: case 106: case 107: case 115: case 116: case 117: break;  // free
+            case 75: case 115: case 116: case 117: break;  // free
             default: unmapped(ch, d1, d2);
             }
         }

@@ -75,7 +75,7 @@ since other gear covers them. The README has the setup and measurements.
   render (`make render`).
 - Inside a polyphonic subpatch the generated code has a class named `voice`,
   so never name an object member `voice`.
-- SRAM1 is at 96 % (43.3 of 44 KB) with freak v1 after the event log was added. The next code growth has to
+- SRAM1 is at 89 % (40.2 of 44 KB) with freak v1: Braids is compiled at -Os by a pragma in third_party/braids/digital_oscillator.cc (17 KB instead of 24 KB; about +1 % DSP per voice). The next code growth has to
   go to SRAM3 (`__attribute__((section(".sram3")))`), or Braids has to shrink.
 
 ## Open items
