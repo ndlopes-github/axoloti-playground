@@ -2,9 +2,11 @@
 
 Standalone synth on an **original Axoloti Core** (not a Ksoloti board), played
 from a **Launchkey 49 MK3** (not an MK2) on the board's USB host port. Nuno's
-direction: jazzy chords, neo-soul, nu-jazz and broken beat; Freak-style
-"strange" oscillators and effects; at most 3 voices. No Rhodes and no drums,
-since other gear covers them. The README has the setup and measurements.
+direction: a **Freak-style synth** (multi-engine digital oscillator, filter,
+modulation, effects, "strange" sounds), at most 3 voices. Do not frame it
+with musical styles or genres in docs or the cheat sheet. No Rhodes and no
+drums, since other gear covers them. The README has the setup and
+measurements.
 
 ## Toolchain (identical layout on both machines)
 

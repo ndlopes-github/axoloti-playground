@@ -1,9 +1,9 @@
 # axoloti-playground
 
-A standalone synth on an original **Axoloti Core**, played from a **Novation
-Launchkey 49 MK3** plugged into the board's USB host port. The aim is jazzy
-chords, neo-soul, nu-jazz and broken beat, with "strange" Freak-style digital
-oscillators and effects.
+A standalone Freak-style synth on an original **Axoloti Core**, played from a
+**Novation Launchkey 49 MK3** plugged into the board's USB host port. It has a
+multi-engine digital oscillator (Braids, 34 shapes), a filter, envelopes, an
+LFO and effects, with every control on the Launchkey.
 
 Status: **`patches/freak/freak_v1.axp`** is the current synth. It has 3
 voices, each a Braids oscillator (34 shapes) into a state-variable filter
