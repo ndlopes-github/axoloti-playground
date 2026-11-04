@@ -6,8 +6,8 @@
 //   ch 1  CC 21-28 knobs      CC 71-79 faders     CC 11-19 fader buttons
 //         CC 1 mod wheel      pitch bend          notes = keys (played by the voices)
 //   ch 10 notes 36-51 pads (top row 40-43 48-51, bottom row 36-39 44-47)
-//   ch 16 CC 51/52 arrows by the knobs, 102/103 track < >, 104/105 round
-//         buttons right of the pads, 106/107 Device Select / Device Lock (left of the pads),
+//   ch 16 CC 51/52 Device Select / Device Lock (right of the knobs; observed),
+//         102/103 track < >, 104/105 round buttons right of the pads, 106/107 left of the pads,
 //         74-77 and 115-118 the two transport rows
 //
 // The result goes on a control bus (freak::bus()) read by the voices and the
@@ -392,8 +392,8 @@ struct Launchkey {
             if (i >= 0) shape = pad_bank * 16 + i;
         } else if (type == 0xB0 && ch == 15 && d2 > 0) {
             switch (d1) {
-            case 51: case 106: set_page(PAGE_SOUND, d1); break;  // arrow up, Device Select
-            case 52: case 107: set_page(PAGE_FX, d1); break;     // arrow down, Device Lock
+            case 51: case 106: set_page(PAGE_SOUND, d1); break;  // Device Select (51); 106 too
+            case 52: case 107: set_page(PAGE_FX, d1); break;     // Device Lock (52); 107 too
             case 102: shape = shape > 0 ? shape - 1 : kNumShapes - 1; break;  // track <
             case 103: shape = shape < kNumShapes - 1 ? shape + 1 : 0; break;  // track >
             case 104: pad_bank = 0; break;

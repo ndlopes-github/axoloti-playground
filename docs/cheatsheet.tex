@@ -89,8 +89,8 @@
   \knob{108}{\textcolor{modc}{ENV AMT}}{\FX{REV TIME}}
   \knob{121.2}{\textcolor{lfoc}{LFO RATE}}{\FX{REV DIFF}}
   \knob{134.4}{\textcolor{lfoc}{LFO AMT}}{\FX{REV LP}}
-  \btn{148}{65.5}{\(\blacktriangle\) SOUND}{black}{11}
-  \btn{148}{58.5}{\(\blacktriangledown\) FX}{fxc}{11}
+  \btn{148}{65.5}{\textbf{SOUND} page\\[-0.4mm]\cc{Device Select}}{black}{12}
+  \btn{148}{58.5}{\textbf{\FX{FX}} page\\[-0.4mm]\cc{Device Lock}}{fxc}{12}
 
   % ---- pads (bank 1 shown) + side buttons
   \pad{0}{1}{0 ring\\mod}  \pad{1}{1}{1 saw\\swarm} \pad{2}{1}{2 comb}    \pad{3}{1}{3 toy}
@@ -98,10 +98,6 @@
   \pad{0}{0}{8 VOSIM}      \pad{1}{0}{9 vowel}    \pad{2}{0}{10 vowel\\FOF} \pad{3}{0}{11 harmo-\\nics}
   \pad{4}{0}{12 FM}        \pad{5}{0}{13 fdbk\\FM}  \pad{6}{0}{14 chaotic\\FM} \pad{7}{0}{15 plucked}
   \node[font=\fontsize{5}{6}\selectfont, text=black!55, anchor=west] at (36,19) {PADS = SHAPES (bank 1 shown; bank 2 = +16, table below)};
-  % Device Select / Device Lock (CC 106/107): the knob pages
-  \btn{31.4}{41.2}{\textbf{SOUND}\\page}{black}{7.4}
-  \btn{31.4}{28}{\textbf{\FX{FX}}\\page}{fxc}{7.4}
-  \node[font=\fontsize{4.2}{4.6}\selectfont, text=black!50, align=center] at (31.4,34.6) {Dev.\,Sel.\\[-0.5mm]Dev.\,Lock};
   \draw[fill=padc!30!white, draw=padc!80!black] (147,40.2) circle (3.1);
   \draw[fill=padc!30!white, draw=padc!80!black] (147,27.8) circle (3.1);
   \node[font=\fontsize{4.9}{5.4}\selectfont, align=center] at (147,40.2) {BANK\\[-0.8mm]1};
@@ -155,8 +151,8 @@
 \FX{REV AMT/TIME/DIFF/LP} & Elements reverb, 0 -- 1 each \\
 \end{tabularx}
 \vspace{0.6mm}
-\textbf{Page: Device Select = SOUND, Device Lock = FX} (the two buttons left of the pads;
-\(\blacktriangle\)/\(\blacktriangledown\) by the knobs do the same). A press always lands on a known page.
+\textbf{Page: Device Select = SOUND, Device Lock = FX} (the two buttons right of the knobs).
+A press always lands on a known page.
 After a page change or RESET, a knob that is not where its value is still works: the value moves
 \emph{proportionally} the way you turn and meets the knob at an end of travel at the latest. No jumps, no dead knobs.
 FX knobs 1--4 are silent until GLIDE or DELAY is on.
@@ -218,6 +214,15 @@ minor/major pentatonic.\\
 3 \(\times\) (Braids \(\to\) SVF \(\to\) amp env \(\times\) velocity) \(\to\) delay \(\to\)
 Elements reverb \(\to\) VOL. Velocity: soft notes keep \(\frac14\) of the level.
 DSP 57\,\%, patch RAM 40 of 44 KB (Axoloti Core, Ksoloti 1.1.0).
+\end{card}
+\begin{card}{Standalone: no laptop}
+\textbf{Save}: in the patch window, \emph{Upload to Internal Flash as Startup}, and also
+\emph{Upload to SD Card as Startup}: at power-up the board looks on the SD card first, then in flash.\\[0.4mm]
+\textbf{Play}: power the Axoloti from a USB charger (micro-USB port); the Launchkey on the USB host port
+is powered by the board. freak starts by itself on preset 0; knobs and faders pick up where they are.\\[0.4mm]
+\textbf{If it will not start}: connect the laptop; \texttt{tools/axo\_dfu -n} puts the board in Rescue Mode
+without opening the box, then \emph{Board \(\to\) Firmware \(\to\) Flash (Rescue)}. Holding S2 at power-up
+skips the startup patch (S2 is inside the box).
 \end{card}
 \end{minipage}
 
@@ -320,7 +325,7 @@ Times are exponential: each quarter of the travel is a factor of 10. S, TIMBRE, 
 \fontsize{7.5}{9.2}\selectfont
 \textbf{No sound}: VOL (fader 9) up? CUTOFF (knob 4) not at the bottom in LP, nor at the top in HP?
 A struck shape (pluck, bell, drums) only sounds on a new key. Is the patch running (Live / startup)?\\[0.4mm]
-\textbf{Knobs do nothing}: on the FX page? Press Device Select (or \(\blacktriangle\)).
+\textbf{Knobs do nothing}: on the FX page? Press Device Select.
 FX knobs 1--4 need GLIDE / DELAY on.\\[0.4mm]
 \textbf{Wobbles or detunes}: LFO AMT (knob 8) or the mod wheel; TARGET may be on pitch.\\[0.4mm]
 \textbf{A note drops out}: 3 voices; a 4th note takes the oldest.\\[0.4mm]
@@ -338,8 +343,9 @@ knobs 1--8 & ch 1 CC 21--28 \\
 faders 1--9 & ch 1 CC 71--79 \\
 fader buttons 1--9 & ch 1 CC 11--19 (127 press, 0 release) \\
 pads & ch 10 notes 36--51 \\
-arrows \(\blacktriangle\)/\(\blacktriangledown\), track \(\blacktriangleleft\)/\(\blacktriangleright\) & ch 16 CC 51/52, 102/103 \\
-Device Select / Lock (pages) & ch 16 CC 106/107 \\
+Device Select / Device Lock (pages) & ch 16 CC 51/52 (observed) \\
+track \(\blacktriangleleft\)/\(\blacktriangleright\) & ch 16 CC 102/103 \\
+buttons left of the pads & ch 16 CC 106/107, also switch pages \\
 round buttons, Capture, Click, Undo, Loop & ch 16 CC 104/105, 74, 76, 77, 118 \\
 \end{tabular}\\[0.4mm]
 Recorded from this unit (\texttt{docs/launchkey49mk3\_map.md}).

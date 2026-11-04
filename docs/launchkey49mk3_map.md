@@ -22,9 +22,9 @@ Channels are 1-based.
 | Transport, top row | ch 16 CC 74 75 76 77 (127/0) | names (Capture MIDI, Quantise, Click, Undo) are from memory of the panel |
 | Transport, bottom row | ch 16 CC 115 116 117 118 (127/0) | likely Play, Stop, Record, Loop (from memory) |
 | Track ◄ ► | ch 16 CC 102 / 103 | |
-| Buttons left of pads (upper, lower) | ch 16 CC 106 / 107 | 107 observed |
+| Buttons left of the pads (upper, lower) | ch 16 CC 106 / 107 | 107 observed; freak maps them to the pages too |
 | Round buttons right of pads (upper, lower) | ch 16 CC 104 / 105 | not observed |
-| Arrows right of knobs (up, down) | ch 16 CC 51 / 52 | not observed |
+| Device Select / Device Lock (right of the knobs) | ch 16 CC 51 / 52 | observed 2026-11-04 as the page buttons (freak log: "knob page ... (CC 51/52)"); the MK3 reference image shows 51/52 right of the pots |
 | ? | ch 1 program change, incrementing 1 → 66 | some button, not yet identified |
 
 Button numbers come from Novation's *Launchkey [MK3] Programmer's Reference Guide* v1,
