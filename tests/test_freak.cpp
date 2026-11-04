@@ -225,7 +225,7 @@ static void test_launchkey() {
     // a knob first seen on this page anchors there and then scales: 127 -> 10 takes reverb time 64 -> 5
     cc(k, 1, 26, 127); CHECK(k.knob[PAGE_FX][K_RTIME] == 64, "first position only anchors");
     cc(k, 1, 26, 10); CHECK(k.knob[PAGE_FX][K_RTIME] == 5, "scaled from the anchor (got %d)", k.knob[PAGE_FX][K_RTIME]);
-    cc(k, 1, 19, 127); CHECK(k.page == PAGE_SOUND, "fader button 9 toggles the page");
+    cc(k, 16, 51, 127); CHECK(k.page == PAGE_SOUND, "arrow up -> SOUND page");
     CHECK(k.knob[PAGE_SOUND][K_RESO] == 100, "sound page resonance kept at 100");
 
     // tap tempo: 1500 ticks = 0.5 s -> 2 Hz
@@ -255,9 +255,9 @@ static void test_knobs_never_dead() {
     k.init();
     for (int v = 64; v <= 100; v++) cc(k, 1, 22, v);  // timbre knob to 100 on SOUND
     CHECK(k.knob[PAGE_SOUND][K_TIMBRE] == 100, "timbre follows on the power-on page");
-    cc(k, 1, 19, 127);                                   // fader button 9: FX page
+    cc(k, 1, 19, 127);                                   // hold fader button 9: FX page
     for (int v = 100; v >= 20; v--) cc(k, 1, 22, v);     // the knob moves on the FX page
-    cc(k, 1, 19, 127);                                   // back to SOUND
+    cc(k, 1, 19, 0);                                     // release: back to SOUND
     // timbre is stored at 100, the knob sits at 20: turning it down one step
     // at a time must lower timbre (scaled pickup), never leave it stuck
     int prev = k.knob[PAGE_SOUND][K_TIMBRE];
@@ -288,6 +288,22 @@ static void test_knobs_never_dead() {
     // once caught up the knob follows exactly
     cc(k, 1, 22, 60);
     CHECK(k.knob[PAGE_SOUND][K_TIMBRE] == 60, "picked knob follows exactly");
+}
+
+// Fader button 9 is hold-for-FX; the arrows latch a page.
+static void test_page_hold() {
+    Launchkey k;
+    k.init();
+    cc(k, 1, 19, 127); CHECK(k.page == PAGE_FX, "holding button 9 -> FX");
+    cc(k, 1, 19, 0);   CHECK(k.page == PAGE_SOUND, "releasing button 9 -> back to SOUND");
+    cc(k, 16, 52, 127); CHECK(k.page == PAGE_FX, "arrow down latches FX");
+    cc(k, 1, 19, 127); cc(k, 1, 19, 0); CHECK(k.page == PAGE_FX, "hold and release keeps the latched FX");
+    cc(k, 16, 51, 127); CHECK(k.page == PAGE_SOUND, "arrow up latches SOUND");
+    cc(k, 1, 19, 127); cc(k, 16, 51, 127); CHECK(k.page == PAGE_FX, "while held, FX wins over the latch");
+    cc(k, 1, 19, 0); CHECK(k.page == PAGE_SOUND, "release returns to the latched page");
+    // a held button survives a reset
+    cc(k, 1, 19, 127); cc(k, 16, 77, 127); CHECK(k.page == PAGE_FX && k.fx_hold, "reset while held stays on FX");
+    cc(k, 1, 19, 0); CHECK(k.page == PAGE_SOUND, "release after reset -> SOUND");
 }
 
 // Exhaustive check of the scaled-pickup map for every anchor (a, s).
@@ -332,6 +348,7 @@ int main() {
     test_knobs_never_dead();
     test_scaled_pickup_map();
     test_events();
+    test_page_hold();
     if (failures) {
         std::printf("%d check(s) failed\n", failures);
         return 1;

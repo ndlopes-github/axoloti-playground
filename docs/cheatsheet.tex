@@ -61,7 +61,7 @@
 {\fontsize{16}{18}\selectfont\bfseries freak}\hspace{3mm}%
 {\fontsize{9.5}{11}\selectfont Axoloti Core + Launchkey 49 MK3 (standalone mode) \textperiodcentered{}
 3-voice Braids synth \textperiodcentered{} patch \texttt{patches/freak/freak\_v1.axp}}\hfill
-{\fontsize{7}{8}\selectfont\color{black!55} v1 \textperiodcentered{} 2026-11-04 \textperiodcentered{} github.com/ndlopes-github/axoloti-playground}
+{\fontsize{7}{8}\selectfont\color{black!55} v1.1 \textperiodcentered{} 2026-11-04 \textperiodcentered{} page 1 of 2 \textperiodcentered{} github.com/ndlopes-github/axoloti-playground}
 
 \vspace{1.5mm}
 \begin{tikzpicture}[x=1mm,y=1mm]
@@ -118,7 +118,7 @@
   \btn{206}{17}{\textcolor{fltc}{KEY}\\TRACK}{fltc}{7.4}
   \btn{214}{17}{\textcolor{fltc}{VELO}\\\(\to\)CUT}{fltc}{7.4}
   \btn{222}{17}{\FX{DELAY}\\on/off}{fxc}{7.4}
-  \btn{233}{17}{KNOB\\PAGE}{black}{7.4}
+  \btn{233}{17}{\textbf{HOLD}\\= FX page}{fxc}{7.4}
   \node[font=\fontsize{4.6}{5}\selectfont, text=black!50, anchor=west] at (160,10.5) {buttons under the faders: each press toggles or steps to the next option};
 
   % ---- transport (ch 16)
@@ -151,10 +151,11 @@
 \FX{REV AMT/TIME/DIFF/LP} & Elements reverb, 0 -- 1 each \\
 \end{tabularx}
 \vspace{0.6mm}
-Page: \(\blacktriangle\)/\(\blacktriangledown\) by the knobs, or the 9th fader button (the page is not shown!).
+\textbf{FX page: hold fader button 9} and turn, like a Shift key; let go and you are back on SOUND.
+To stay on FX hands-free, \(\blacktriangledown\) latches it and \(\blacktriangle\) returns to SOUND.
 After a page change or RESET, a knob that is not where its value is still works: the value moves
-\emph{proportionally} the way you turn and meets the knob at the latest at an end of travel. No jumps, no dead knobs.
-On the FX page, knobs 1--4 are silent until GLIDE or DELAY is switched on.
+\emph{proportionally} the way you turn and meets the knob at an end of travel at the latest. No jumps, no dead knobs.
+FX knobs 1--4 are silent until GLIDE or DELAY is on.
 \end{card}
 \end{minipage}\hfill
 \begin{minipage}[t]{68mm}\vspace{0pt}
@@ -193,9 +194,9 @@ Top row = first 8, bottom row = next 8. 32 particle noise and 33 digital modulat
 are struck on each key press.
 \end{card}
 \begin{card}{Notes}
-3 voices. Power-on: saw swarm, LP, key tracking on, delay off. RESET (Undo) restores that sound
-and keeps the page. The buttons' states are \textbf{not shown} (no LED feedback yet). Every press
-moves to the next option, so count, or listen.
+3 voices (a 4th note takes the oldest voice). Power-on: saw swarm, LP, key tracking on, delay off.
+RESET (Undo) restores that sound. The toggles' states are \textbf{not shown} yet (no LEDs in standalone
+mode). Each press moves to the next option, so count, or listen. Page 2: shapes, dial values, starting points.
 \end{card}
 \end{minipage}\hfill
 \begin{minipage}[t]{63mm}\vspace{0pt}
@@ -211,7 +212,139 @@ minor/major pentatonic.\\
 \begin{card}{Signal path and load}
 3 \(\times\) (Braids \(\to\) SVF \(\to\) amp env \(\times\) velocity) \(\to\) delay \(\to\)
 Elements reverb \(\to\) VOL. Velocity: soft notes keep \(\frac14\) of the level.
-DSP 55\,\%, patch RAM 41 of 44 KB (Axoloti Core, Ksoloti 1.1.0).
+DSP 54.5\,\%, patch RAM 43 of 44 KB (Axoloti Core, Ksoloti 1.1.0).
+\end{card}
+\end{minipage}
+
+%======================================================================
+\newpage
+{\fontsize{16}{18}\selectfont\bfseries freak}\hspace{3mm}%
+{\fontsize{9.5}{11}\selectfont shapes, dial values, starting points, troubleshooting}\hfill
+{\fontsize{7}{8}\selectfont\color{black!55} v1.1 \textperiodcentered{} page 2 of 2}
+
+\vspace{1.5mm}
+\newcommand{\sh}[5]{#1 & \textcolor{black!55}{#2} & \textbf{#3} & #4 & #5 \\}
+\begin{minipage}[t]{166mm}\vspace{0pt}
+\begin{card}{The 34 shapes: what TIMBRE (knob 2) and COLOR (knob 3) do \quad\textmd{\fontsize{6.5}{7}\selectfont (after the Braids manual)}}
+\fontsize{6.9}{8.3}\selectfont
+\setlength{\tabcolsep}{2.4pt}
+\begin{tabular}[t]{@{}r l l l l@{}}
+\# & pad & shape & TIMBRE & COLOR \\ \hline
+\sh{0}{1·T1}{ring mod}{tuning of sines 2, 3}{tuning of sines 2, 3}
+\sh{1}{1·T2}{saw swarm}{detune (7 saws)}{high-pass}
+\sh{2}{1·T3}{comb}{comb pitch}{feedback \(-\)\,/\,0\,/\,+ (L\,/\,noon\,/\,R)}
+\sh{3}{1·T4}{toy}{clock rate}{glitches}
+\sh{4}{1·T5}{filter LP}{cutoff}{wave: saw\(\to\)square\(\to\)tri}
+\sh{5}{1·T6}{filter peak}{cutoff}{wave: saw\(\to\)square\(\to\)tri}
+\sh{6}{1·T7}{filter BP}{cutoff}{wave: saw\(\to\)square\(\to\)tri}
+\sh{7}{1·T8}{filter HP}{cutoff}{wave: saw\(\to\)square\(\to\)tri}
+\sh{8}{1·B1}{VOSIM}{formant 1}{formant 2}
+\sh{9}{1·B2}{vowel}{vowel a e i o u}{formant shift}
+\sh{10}{1·B3}{vowel FOF}{vowel a e i o u}{formant shift}
+\sh{11}{1·B4}{harmonics}{centre of the 12 harmonics}{their spread}
+\sh{12}{1·B5}{FM}{mod amount}{ratio}
+\sh{13}{1·B6}{feedback FM}{mod amount (harsher)}{ratio}
+\sh{14}{1·B7}{chaotic FM}{mod amount (unstable)}{ratio}
+\sh{15}{1·B8}{plucked}{damping}{pluck position}
+\sh{16}{2·T1}{bowed}{friction}{bow position}
+\end{tabular}\hfill
+\begin{tabular}[t]{@{}r l l l l@{}}
+\# & pad & shape & TIMBRE & COLOR \\ \hline
+\sh{17}{2·T2}{blown}{air pressure}{geometry}
+\sh{18}{2·T3}{fluted}{air pressure}{geometry}
+\sh{19}{2·T4}{bell}{damping}{inharmonicity}
+\sh{20}{2·T5}{drum}{damping}{brightness}
+\sh{21}{2·T6}{kick}{decay}{tone}
+\sh{22}{2·T7}{cymbal}{band-pass cutoff}{drone \(\leftrightarrow\) noise}
+\sh{23}{2·T8}{snare}{tone}{snappy (noise)}
+\sh{24}{2·B1}{wavetables}{sweep the table}{table, 1 of 20}
+\sh{25}{2·B2}{wave map}{X in a 16\(\times\)16 map}{Y}
+\sh{26}{2·B3}{wave line}{position}{smoothing (left: stepped)}
+\sh{27}{2·B4}{paraphonic}{wave}{\textbf{chord} (left: unison)}
+\sh{28}{2·B5}{filtered noise}{resonance}{LP \(\leftrightarrow\) HP; keys = cutoff}
+\sh{29}{2·B6}{twin peaks}{resonance Q}{peak spacing}
+\sh{30}{2·B7}{clocked noise}{periodicity}{quantise 2--32 steps}
+\sh{31}{2·B8}{granular}{grain density}{pitch randomness}
+\sh{32}{\(\blacktriangleright\)}{particles}{density}{pitch randomness}
+\sh{33}{\(\blacktriangleright\)}{digital mod}{bit rate}{data byte}
+\end{tabular}\\[0.6mm]
+pad = bank\(\cdot\)row+column: 1\(\cdot\)T1 is bank 1, top row, first pad (BANK 1/2 = the round buttons right of the pads).
+Plucked, bowed, bell, drum, kick, cymbal and snare are struck on each new key: S and R shape the tail only.
+Time constants inside Braids that do not follow pitch (grain rates, built-in decays) run at half the original speed.
+\end{card}
+
+\begin{card}{Starting points \quad\textmd{\fontsize{6.5}{7}\selectfont (not yet tried by ear: adjust to taste; fractions = how far a knob/fader is turned)}}
+\fontsize{7.4}{9.0}\selectfont
+\begin{tabularx}{\linewidth}{@{}>{\bfseries}l L@{}}
+Vowel pad (nu-jazz) & shape 10 vowel FOF; TIMBRE 1/2, COLOR 1/2; LFO\(\to\)timbre, sine, RATE 1/4 (0.2 Hz), AMT 1/3;
+amp A 2/3, S 3/4, R 3/4; CUTOFF 3/4; FX: DELAY on, TIME 1/2, FDBK 1/3, MIX 1/4; REV AMT 1/2. \\
+FM bass (broken beat) & shape 12 FM, play an octave down; TIMBRE 1/4, COLOR 1/2; amp A 0, D 1/2, S 0, R 1/4;
+CUTOFF 1/3, RESO 1/4, ENV AMT 3/4, mod D 1/2; VELO\(\to\)CUT on; GLIDE on with GLIDE 1/4 for slides. \\
+Glass mallets & shape 19 bell; TIMBRE 1/3, COLOR 1/4; amp S full, R 3/4; filter HP (press FILTER twice), CUTOFF 1/4;
+REV AMT 3/4, TIME 3/4. \\
+Chord stabs & shape 27 paraphonic: every key plays a chord, COLOR picks it; Launchkey Scale mode Dorian keeps it modal;
+amp D 1/2, S 0; DELAY on, TIME 3/4, FDBK 1/2 for dub echoes. \\
+Granular weather & shape 31 granular; TIMBRE 1/2, COLOR 3/4; LFO\(\to\)color (TARGET once), S\&H (WAVE 4 times),
+tap the tempo; CYCLE (Loop) on with ENV AMT 3/4, filter BP: rhythmic swells. \\
+Pitched rain & shape 32 particles (\(\blacktriangleright\) from 31); TIMBRE 1/4, COLOR full; DELAY on, FDBK 3/4; REV AMT 3/4. \\
+\end{tabularx}
+\end{card}
+\end{minipage}\hfill
+\begin{minipage}[t]{112mm}\vspace{0pt}
+\begin{card}{Where the values fall (knob or fader turned \dots)}
+\fontsize{7.5}{9.2}\selectfont
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l r r r r@{}}
+ & 1/4 & 1/2 & 3/4 & full \\ \hline
+\textcolor{ampc}{\textbf{A}}, \textcolor{ampc}{\textbf{D}}, \textcolor{ampc}{\textbf{R}} (both envelopes) & 10 ms & 100 ms & 1 s & 10 s \\
+\textcolor{fltc}{\textbf{CUTOFF}} (at note 60) & 113 Hz & 640 Hz & 3.6 kHz & 20 kHz \\
+\textcolor{fltc}{\textbf{RESO}} (Q) & 1.3 & 3.2 & 8 & 20 \\
+\textcolor{modc}{\textbf{ENV AMT}} & \(-\)2.5 oct & 0 & +2.5 oct & +5 oct \\
+\textcolor{lfoc}{\textbf{LFO RATE}} & 0.22 Hz & 1 Hz & 4.5 Hz & 20 Hz \\
+\FX{GLIDE} & 0.06 s & 0.25 s & 0.56 s & 1 s \\
+\FX{DLY TIME} & 35 ms & 0.12 s & 0.43 s & 1.5 s \\
+\FX{DLY FDBK} & 0.24 & 0.48 & 0.71 & 0.95 \\
+\textbf{VOL} (gain) & 0.06 & 0.25 & 0.56 & 1 \\
+\end{tabular}\\[0.5mm]
+Times are exponential: each quarter of the travel is a factor of 10. S, TIMBRE, COLOR and the mixes are linear, 0--1.
+\end{card}
+
+\begin{card}{Something seems wrong?}
+\fontsize{7.5}{9.2}\selectfont
+\textbf{No sound}: VOL (fader 9) up? CUTOFF (knob 4) not at the bottom in LP, nor at the top in HP?
+A struck shape (pluck, bell, drums) only sounds on a new key. Is the patch running (Live / startup)?\\[0.4mm]
+\textbf{Knobs do nothing}: are you holding button 9 (FX page)? Did \(\blacktriangledown\) latch FX? Press \(\blacktriangle\).
+FX knobs 1--4 need GLIDE / DELAY on.\\[0.4mm]
+\textbf{Wobbles or detunes}: LFO AMT (knob 8) or the mod wheel; TARGET may be on pitch.\\[0.4mm]
+\textbf{A note drops out}: 3 voices; a 4th note takes the oldest.\\[0.4mm]
+\textbf{Echoes pile up}: lower DLY FDBK or switch DELAY off (the tail dies away).\\[0.4mm]
+\textbf{Lost}: RESET (Undo) restores the power-on sound.\\[0.4mm]
+{\color{black!60}With the patcher connected, its log prints page changes, resets, knobs catching up and unknown messages.}
+\end{card}
+
+\begin{card}{MIDI reference (Launchkey 49 MK3, standalone)}
+\fontsize{7.4}{9.0}\selectfont
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l l@{}}
+keys, bend, mod wheel & ch 1: notes 36--84, pitch bend, CC 1 \\
+knobs 1--8 & ch 1 CC 21--28 \\
+faders 1--9 & ch 1 CC 71--79 \\
+fader buttons 1--9 & ch 1 CC 11--19 (127 press, 0 release) \\
+pads & ch 10 notes 36--51 \\
+arrows \(\blacktriangle\)/\(\blacktriangledown\), track \(\blacktriangleleft\)/\(\blacktriangleright\) & ch 16 CC 51/52, 102/103 \\
+round buttons, Click, Undo, Loop & ch 16 CC 104/105, 76, 77, 118 \\
+\end{tabular}\\[0.4mm]
+Recorded from this unit (\texttt{docs/launchkey49mk3\_map.md}).
+\end{card}
+
+\begin{card}{Jazz harmony on 3 voices}
+\fontsize{7.4}{9.0}\selectfont
+\textbf{Shell voicings}: let the 3 voices carry the colour, not the root: 3rd, 7th and one tension.
+In C: Cmaj9 = E--B--D, Dm9 = F--C--E, G13 = F--B--E, G7\(\flat\)9 = F--B--A\(\flat\).
+A bass line from another instrument supplies the roots.\\[0.4mm]
+\textbf{More notes per key}: shape 27 (paraphonic) plays a chord on every voice (COLOR picks it),
+and the Launchkey's \textbf{Fixed Chord} repeats a stored shape from one key.
+\textbf{Scale} mode Dorian or Mixolydian keeps every key in the mode.
 \end{card}
 \end{minipage}
 

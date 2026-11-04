@@ -91,7 +91,9 @@ struct Launchkey {
     uint8_t phys[8];     // last position of each physical knob
     bool phys_known[8];
     uint8_t fader[NUM_FADERS];
-    int page;
+    int page;          // the page in use: FX while fader button 9 is held, else latched_page
+    int latched_page;  // set by the arrows by the knobs
+    bool fx_hold;      // fader button 9 held down
     int shape;
     int fmode, lfo_target, lfo_wave;
     bool modtimbre, glide, keytrack, velcut, delay_on, cycle;
@@ -136,6 +138,8 @@ struct Launchkey {
         for (int k = 0; k < 8; k++) { phys[k] = 0; phys_known[k] = false; }
         for (int f = 0; f < NUM_FADERS; f++) fader[f] = kFaderInit[f];
         page = PAGE_SOUND;
+        latched_page = PAGE_SOUND;
+        fx_hold = false;
         pad_bank = 0;
         shape = kInitShape;
         fmode = 0; lfo_target = LFO_TIMBRE; lfo_wave = 0;
@@ -153,7 +157,8 @@ struct Launchkey {
     // Reset to the power-on sound, keeping the page. Knobs whose stored value
     // moved away from the physical position must be picked up again.
     void reset_sound() {
-        const int p = page;
+        const int p = page, lp = latched_page;
+        const bool hold = fx_hold;
         const uint8_t ph[8] = {phys[0], phys[1], phys[2], phys[3], phys[4], phys[5], phys[6], phys[7]};
         bool known[8];
         for (int k = 0; k < 8; k++) known[k] = phys_known[k];
@@ -161,6 +166,8 @@ struct Launchkey {
         init();
         for (int k = 0; k < 8; k++) { phys[k] = ph[k]; phys_known[k] = known[k]; }
         ticks = t;
+        latched_page = lp;
+        fx_hold = hold;
         page = p;  // the page does not change on a reset: no page event
         set_page(p);
         push_event(EV_RESET, 0, 0, 0);
@@ -240,8 +247,19 @@ struct Launchkey {
         case B_KEYTRACK: keytrack = !keytrack; break;
         case B_VELCUT: velcut = !velcut; break;
         case B_DELAY: delay_on = !delay_on; break;
-        case B_PAGE: set_page(page == PAGE_SOUND ? PAGE_FX : PAGE_SOUND); break;
         }
+    }
+
+    // Fader button 9 is a hold-for-FX key, like Shift: the FX page only
+    // while it is held, so the page in use is always known without a display.
+    // The arrows latch a page for hands-free FX work.
+    void on_page_button(bool down) {
+        fx_hold = down;
+        set_page(fx_hold ? PAGE_FX : latched_page);
+    }
+    void on_arrow(int p) {
+        latched_page = p;
+        set_page(fx_hold ? PAGE_FX : latched_page);
     }
 
     // Pads: top row = shapes 0..7, bottom row = 8..15; the round button right
@@ -258,7 +276,8 @@ struct Launchkey {
         if (type == 0xB0 && ch == 0) {
             if (d1 >= 21 && d1 <= 28) on_knob(d1 - 21, d2);
             else if (d1 >= 71 && d1 <= 79) fader[d1 - 71] = d2;
-            else if (d1 >= 11 && d1 <= 19) { if (d2 > 0) on_button(d1 - 11); }
+            else if (d1 == 11 + B_PAGE) on_page_button(d2 > 0);  // press and release
+            else if (d1 >= 11 && d1 <= 18) { if (d2 > 0) on_button(d1 - 11); }
             else if (d1 == 1) modwheel = unit(d2);
             else unmapped(ch, d1, d2);
         } else if (type == 0xB0 && ch != 15) {
@@ -270,8 +289,8 @@ struct Launchkey {
             if (i >= 0) shape = pad_bank * 16 + i;
         } else if (type == 0xB0 && ch == 15 && d2 > 0) {
             switch (d1) {
-            case 51: set_page(PAGE_SOUND); break;   // arrow up
-            case 52: set_page(PAGE_FX); break;      // arrow down
+            case 51: on_arrow(PAGE_SOUND); break;   // arrow up
+            case 52: on_arrow(PAGE_FX); break;      // arrow down
             case 102: shape = shape > 0 ? shape - 1 : kNumShapes - 1; break;  // track <
             case 103: shape = shape < kNumShapes - 1 ? shape + 1 : 0; break;  // track >
             case 104: pad_bank = 0; break;
