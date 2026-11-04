@@ -1,0 +1,137 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="launchkey_ctl" name="ctl" x="14" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <patcher type="patch/patcher" name="voices" x="14" y="196">
+      <params/>
+      <attribs>
+         <combo attributeName="poly" selection="3"/>
+      </attribs>
+      <subpatch appVersion="1.1.0">
+         <obj type="midi/in/keyb" name="keyb" x="14" y="14">
+            <params/>
+            <attribs/>
+         </obj>
+         <obj type="freak_voice" name="voice" x="168" y="14">
+            <params/>
+            <attribs/>
+         </obj>
+         <obj type="patch/outlet a" name="out" x="336" y="14">
+            <params/>
+            <attribs/>
+         </obj>
+         <nets>
+            <net>
+               <source obj="keyb" outlet="note"/>
+               <dest obj="voice" inlet="note"/>
+            </net>
+            <net>
+               <source obj="keyb" outlet="gate"/>
+               <dest obj="voice" inlet="gate"/>
+            </net>
+            <net>
+               <source obj="keyb" outlet="velocity"/>
+               <dest obj="voice" inlet="velocity"/>
+            </net>
+            <net>
+               <source obj="voice" outlet="wave"/>
+               <dest obj="out" inlet="outlet"/>
+            </net>
+         </nets>
+         <settings>
+            <subpatchmode>polyphonic</subpatchmode>
+            <MidiChannel>1</MidiChannel>
+            <NPresets>8</NPresets>
+            <NPresetEntries>32</NPresetEntries>
+            <NModulationSources>8</NModulationSources>
+            <NModulationTargetsPerSource>8</NModulationTargetsPerSource>
+         </settings>
+         <notes><![CDATA[keyb -> freak_voice; every sound setting comes from the launchkey_ctl bus.]]></notes>
+      </subpatch>
+   </patcher>
+   <obj type="fx_delay" name="delay" x="196" y="196">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="fx/lmnts/reverb" name="reverb" x="336" y="14">
+      <params>
+         <frac32.u.map name="amount" value="0.0"/>
+         <frac32.u.map name="time" value="0.0"/>
+         <frac32.u.map name="diffusion" value="0.0"/>
+         <frac32.u.map name="gain" value="32.0"/>
+         <frac32.u.map name="lowpass" value="0.0"/>
+      </params>
+      <attribs/>
+   </obj>
+   <obj type="gain/vca" name="master_l" x="532" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="gain/vca" name="master_r" x="532" y="84">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="audio/out stereo" name="dac" x="644" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets>
+      <net>
+         <source obj="voices" outlet="out"/>
+         <dest obj="delay" inlet="in"/>
+      </net>
+      <net>
+         <source obj="delay" outlet="l"/>
+         <dest obj="reverb" inlet="l"/>
+      </net>
+      <net>
+         <source obj="delay" outlet="r"/>
+         <dest obj="reverb" inlet="r"/>
+      </net>
+      <net>
+         <source obj="ctl" outlet="revamount"/>
+         <dest obj="reverb" inlet="amount"/>
+      </net>
+      <net>
+         <source obj="ctl" outlet="revtime"/>
+         <dest obj="reverb" inlet="time"/>
+      </net>
+      <net>
+         <source obj="ctl" outlet="revdiffusion"/>
+         <dest obj="reverb" inlet="diffusion"/>
+      </net>
+      <net>
+         <source obj="ctl" outlet="revlowpass"/>
+         <dest obj="reverb" inlet="lowpass"/>
+      </net>
+      <net>
+         <source obj="reverb" outlet="l"/>
+         <dest obj="master_l" inlet="a"/>
+      </net>
+      <net>
+         <source obj="reverb" outlet="r"/>
+         <dest obj="master_r" inlet="a"/>
+      </net>
+      <net>
+         <source obj="ctl" outlet="master"/>
+         <dest obj="master_l" inlet="v"/>
+         <dest obj="master_r" inlet="v"/>
+      </net>
+      <net>
+         <source obj="master_l" outlet="o"/>
+         <dest obj="dac" inlet="left"/>
+      </net>
+      <net>
+         <source obj="master_r" outlet="o"/>
+         <dest obj="dac" inlet="right"/>
+      </net>
+   </nets>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+      <MidiChannel>1</MidiChannel>
+   </settings>
+   <notes><![CDATA[freak v1: 3 x (Braids -> SVF -> amp) -> delay -> Elements reverb -> master.
+All control comes from the Launchkey 49 MK3 via launchkey_ctl (lib/launchkey_ctl.h);
+docs/cheatsheet.pdf documents it.]]></notes>
+</patch-1.0>

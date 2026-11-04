@@ -55,6 +55,16 @@ since other gear covers them. The README has the setup and measurements.
 - The Launchkey MK3 lights its pads only in DAW mode, through its second USB
   port. That port is not yet tested through the Axoloti host.
 
+- Inlet and outlet names: the patcher doubles underscores in the generated
+  identifiers (`rev_amount` → `outlet_rev__amount`), so use names without `_`.
+- freak v1 architecture: `launchkey_ctl` (one per patch) writes
+  `freak::bus()`, a namespace-scope POD in `lib/launchkey_ctl.h`. The patch is
+  one translation unit, so there is one instance. `freak_voice` and
+  `fx_delay` read it, with no wires. Change the mapping in the header, keep
+  `tests/` and `docs/cheatsheet.tex` in step, and run `make test cheatsheet`.
+- SRAM1 is at 91 % (41.2 of 44 KB) with freak v1. The next code growth has to
+  go to SRAM3 (`__attribute__((section(".sram3")))`), or Braids has to shrink.
+
 ## Open items
 
 - SD card (inserted, not yet inspected; Nuno allowed formatting it). It may

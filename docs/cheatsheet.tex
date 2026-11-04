@@ -1,0 +1,216 @@
+% freak cheat sheet: one landscape A4 card.  Build: make cheatsheet
+% Every number here comes from lib/launchkey_ctl.h and lib/freak_dsp.h.
+\documentclass{article}
+\usepackage[a4paper,landscape,margin=6mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[default]{sourcesanspro}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usepackage[most]{tcolorbox}
+\usepackage{array}
+\usepackage{tabularx}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\definecolor{ink}{RGB}{30,30,30}
+\definecolor{snd}{RGB}{20,20,20}       % sound-page knob labels
+\definecolor{fxc}{RGB}{30,90,170}      % FX-page knob labels
+\definecolor{ampc}{RGB}{67,160,71}     % amp envelope
+\definecolor{modc}{RGB}{230,140,20}    % mod envelope
+\definecolor{lfoc}{RGB}{150,60,170}    % LFO
+\definecolor{fltc}{RGB}{215,60,50}     % filter
+\definecolor{freec}{RGB}{170,170,170}  % unassigned
+\definecolor{padc}{RGB}{120,170,230}
+
+\newcommand{\FX}[1]{\textcolor{fxc}{#1}}
+\newcommand{\cc}[1]{\textcolor{black!45}{\fontsize{4.6}{5}\selectfont #1}}
+
+% knob: x, SOUND label, FX label
+\newcommand{\knob}[3]{%
+  \draw[fill=black!8, draw=black!60, line width=0.4pt] (#1,62) circle (3.6);
+  \draw[black!60, line width=0.5pt] (#1,62) -- ++(110:3.1);
+  \node[font=\fontsize{5.6}{6.2}\selectfont\bfseries, text=snd, align=center] at (#1,69.4) {#2};
+  \node[font=\fontsize{5.6}{6.2}\selectfont, text=fxc, align=center] at (#1,54.4) {#3};}
+% pad: col (0..7), row (1 top, 0 bottom), label
+\newcommand{\pad}[3]{%
+  \draw[rounded corners=0.8mm, fill=padc!35!white, draw=padc!80!black, line width=0.4pt]
+    (36+#1*13.2, 22+#2*13.2) rectangle ++(12,12);
+  \node[font=\fontsize{5.4}{6}\selectfont, text=ink, align=center, text width=11mm]
+    at (36+#1*13.2+6, 22+#2*13.2+6) {#3};}
+% fader: x, top label, colour
+\newcommand{\fader}[3]{%
+  \draw[fill=black!12, draw=black!50] (#1-0.7,26) rectangle (#1+0.7,52);
+  \draw[fill=#3!60!white, draw=#3!70!black, rounded corners=0.4mm] (#1-2.6,36) rectangle (#1+2.6,40);
+  \node[font=\fontsize{5.6}{6.2}\selectfont\bfseries, text=#3!70!black, align=center] at (#1,56) {#2};}
+% small button: x, y, label, colour, width
+\newcommand{\btn}[5]{%
+  \draw[rounded corners=0.6mm, fill=#4!25!white, draw=#4!70!black, line width=0.4pt]
+    (#1-#5/2,#2-2.6) rectangle (#1+#5/2,#2+2.6);
+  \node[font=\fontsize{4.9}{5.4}\selectfont, text=ink, align=center] at (#1,#2) {#3};}
+
+\tcbset{card/.style={enhanced, colback=white, colframe=black!70, boxrule=0.5pt, arc=1.5mm,
+    left=1.6mm, right=1.6mm, top=1.1mm, bottom=1.1mm, toptitle=0.6mm, bottomtitle=0.6mm,
+    fonttitle=\bfseries\fontsize{8.6}{10}\selectfont, coltitle=white, colbacktitle=black!75,
+    fontupper=\fontsize{7.1}{8.5}\selectfont, before skip=0mm, after skip=1.8mm}}
+\newtcolorbox{card}[1]{card, title={#1}}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+\begin{document}
+
+{\fontsize{16}{18}\selectfont\bfseries freak}\hspace{3mm}%
+{\fontsize{9.5}{11}\selectfont Axoloti Core + Launchkey 49 MK3 (standalone mode) \textperiodcentered{}
+3-voice Braids synth \textperiodcentered{} patch \texttt{patches/freak/freak\_v1.axp}}\hfill
+{\fontsize{7}{8}\selectfont\color{black!55} v1 \textperiodcentered{} 2026-11-04 \textperiodcentered{} github.com/ndlopes-github/axoloti-playground}
+
+\vspace{1.5mm}
+\begin{tikzpicture}[x=1mm,y=1mm]
+  \draw[rounded corners=3mm, fill=black!3, draw=black!40, line width=0.6pt] (0,0) rectangle (284,76);
+
+  % ---- left: screen, track buttons, wheels
+  \draw[fill=black!70, draw=black!80, rounded corners=0.8mm] (4,62) rectangle (30,72);
+  \node[font=\fontsize{5}{6}\selectfont, text=white] at (17,67) {Launchkey screen};
+  \btn{10.5}{54}{\(\blacktriangleleft\) SHAPE\(-\)}{fltc}{12}
+  \btn{23.5}{54}{SHAPE+ \(\blacktriangleright\)}{fltc}{12}
+  \node[font=\fontsize{4.6}{5}\selectfont, text=black!50] at (17,49) {Track \(\blacktriangleleft\) \(\blacktriangleright\) (CC 102/103)};
+  \draw[rounded corners=1.5mm, fill=black!10, draw=black!55] (6,8) rectangle (13,40);
+  \draw[rounded corners=1.5mm, fill=black!10, draw=black!55] (20,8) rectangle (27,40);
+  \node[font=\fontsize{5.4}{6}\selectfont\bfseries, align=center] at (9.5,4.2) {BEND\\[-0.6mm]\(\pm\)2 st};
+  \node[font=\fontsize{5.4}{6}\selectfont\bfseries, align=center, text=lfoc] at (23.5,4.2) {MOD\\[-0.6mm]+LFO amt};
+
+  % ---- knobs: SOUND page (black, top) / FX page (blue, below)
+  \node[font=\fontsize{5}{6}\selectfont, text=black!55, anchor=west] at (36,74) {KNOBS \quad
+     \textbf{\textcolor{snd}{SOUND page}} above \quad \textcolor{fxc}{FX page} below};
+  \knob{42}{SHAPE}{\FX{GLIDE}}
+  \knob{55.2}{TIMBRE}{\FX{DLY TIME}}
+  \knob{68.4}{COLOR}{\FX{DLY FDBK}}
+  \knob{81.6}{\textcolor{fltc}{CUTOFF}}{\FX{DLY MIX}}
+  \knob{94.8}{\textcolor{fltc}{RESO}}{\FX{REV AMT}}
+  \knob{108}{\textcolor{modc}{ENV AMT}}{\FX{REV TIME}}
+  \knob{121.2}{\textcolor{lfoc}{LFO RATE}}{\FX{REV DIFF}}
+  \knob{134.4}{\textcolor{lfoc}{LFO AMT}}{\FX{REV LP}}
+  \btn{148}{65.5}{\(\blacktriangle\) SOUND}{black}{11}
+  \btn{148}{58.5}{\(\blacktriangledown\) FX}{fxc}{11}
+
+  % ---- pads (bank 1 shown) + side buttons
+  \pad{0}{1}{0 ring\\mod}  \pad{1}{1}{1 saw\\swarm} \pad{2}{1}{2 comb}    \pad{3}{1}{3 toy}
+  \pad{4}{1}{4 filter\\LP} \pad{5}{1}{5 filter\\peak} \pad{6}{1}{6 filter\\BP} \pad{7}{1}{7 filter\\HP}
+  \pad{0}{0}{8 VOSIM}      \pad{1}{0}{9 vowel}    \pad{2}{0}{10 vowel\\FOF} \pad{3}{0}{11 harmo-\\nics}
+  \pad{4}{0}{12 FM}        \pad{5}{0}{13 fdbk\\FM}  \pad{6}{0}{14 chaotic\\FM} \pad{7}{0}{15 plucked}
+  \node[font=\fontsize{5}{6}\selectfont, text=black!55, anchor=west] at (36,19) {PADS = SHAPES (bank 1 shown; bank 2 = +16, table below)};
+  \draw[fill=padc!30!white, draw=padc!80!black] (147,40.2) circle (3.1);
+  \draw[fill=padc!30!white, draw=padc!80!black] (147,27.8) circle (3.1);
+  \node[font=\fontsize{4.9}{5.4}\selectfont, align=center] at (147,40.2) {BANK\\[-0.8mm]1};
+  \node[font=\fontsize{4.9}{5.4}\selectfont, align=center] at (147,27.8) {BANK\\[-0.8mm]2};
+
+  % ---- faders
+  \node[font=\fontsize{5}{6}\selectfont, text=black!55, anchor=west] at (160,74) {FADERS \quad
+     \textcolor{ampc}{\textbf{amp env}} \quad \textcolor{modc}{\textbf{mod env}} (\(\to\) cutoff, ENV AMT)};
+  \fader{164}{A}{ampc} \fader{172}{D}{ampc} \fader{180}{S}{ampc} \fader{188}{R}{ampc}
+  \fader{198}{A}{modc} \fader{206}{D}{modc} \fader{214}{S}{modc} \fader{222}{R}{modc}
+  \fader{233}{VOL}{black}
+  % fader buttons (CC 11-19): press = toggle / next
+  \btn{164}{17}{\textcolor{fltc}{FILTER}\\LP/BP/HP}{fltc}{7.4}
+  \btn{172}{17}{\textcolor{lfoc}{LFO}\\TARGET}{lfoc}{7.4}
+  \btn{180}{17}{\textcolor{lfoc}{LFO}\\WAVE}{lfoc}{7.4}
+  \btn{188}{17}{\textcolor{modc}{MOD}\\\(\to\)TIMBRE}{modc}{7.4}
+  \btn{198}{17}{GLIDE\\on/off}{fxc}{7.4}
+  \btn{206}{17}{\textcolor{fltc}{KEY}\\TRACK}{fltc}{7.4}
+  \btn{214}{17}{\textcolor{fltc}{VELO}\\\(\to\)CUT}{fltc}{7.4}
+  \btn{222}{17}{\FX{DELAY}\\on/off}{fxc}{7.4}
+  \btn{233}{17}{KNOB\\PAGE}{black}{7.4}
+  \node[font=\fontsize{4.6}{5}\selectfont, text=black!50, anchor=west] at (160,10.5) {buttons under the faders: each press toggles or steps to the next option};
+
+  % ---- transport (ch 16)
+  \node[font=\fontsize{5}{6}\selectfont, text=black!55] at (263,60) {transport};
+  \btn{249}{52}{Capture\\\cc{74}}{freec}{8.5}
+  \btn{258.5}{52}{Quantise\\\cc{75}}{freec}{8.5}
+  \btn{268}{52}{\textcolor{lfoc}{TAP LFO}\\\cc{76 Click}}{lfoc}{8.5}
+  \btn{277.5}{52}{RESET\\\cc{77 Undo}}{black}{8.5}
+  \btn{249}{43}{Play\\\cc{115}}{freec}{8.5}
+  \btn{258.5}{43}{Stop\\\cc{116}}{freec}{8.5}
+  \btn{268}{43}{Record\\\cc{117}}{freec}{8.5}
+  \btn{277.5}{43}{\textcolor{modc}{CYCLE}\\\cc{118 Loop}}{modc}{8.5}
+  \node[font=\fontsize{4.6}{5.2}\selectfont, text=black!50, align=left, anchor=north west] at (245,36)
+     {grey = free (kept for a\\sequencer); names of the\\top row from memory,\\CC numbers checked};
+\end{tikzpicture}
+
+\vspace{1.2mm}
+\begin{minipage}[t]{70mm}\vspace{0pt}
+\begin{card}{Knobs: two pages, soft takeover}
+\begin{tabularx}{\linewidth}{@{}l L@{}}
+\textbf{SHAPE} & 34 Braids shapes in turn (3--4 steps each) \\
+\textbf{TIMBRE / COLOR} & the two Braids parameters (meaning depends on the shape) \\
+\textbf{\textcolor{fltc}{CUTOFF}} & 20 Hz \(\cdot 2^{10k}\): 20 Hz -- 20 kHz \\
+\textbf{\textcolor{fltc}{RESO}} & Q = 0.5 -- 20 (exponential) \\
+\textbf{\textcolor{modc}{ENV AMT}} & mod env \(\to\) cutoff, \(\pm\)5 octaves, 0 at centre \\
+\textbf{\textcolor{lfoc}{LFO RATE}} & 0.05 -- 20 Hz (or tap tempo) \\
+\textbf{\textcolor{lfoc}{LFO AMT}} & 0 -- 1, plus the mod wheel \\[0.6mm]
+\FX{GLIDE} & 0 -- 1 s (quadratic), with GLIDE on \\
+\FX{DLY TIME / FDBK / MIX} & 10 ms -- 1.5 s; 0 -- 0.95; 0 -- 1 \\
+\FX{REV AMT/TIME/DIFF/LP} & Elements reverb, 0 -- 1 each \\
+\end{tabularx}
+\vspace{0.6mm}
+Page: \(\blacktriangle\)/\(\blacktriangledown\) by the knobs, or the 9th fader button. After a page change,
+a knob only takes effect once it reaches its stored value (within 2 steps, or by crossing it).
+\end{card}
+\end{minipage}\hfill
+\begin{minipage}[t]{68mm}\vspace{0pt}
+\begin{card}{Envelopes and filter}
+Faders 1--4 \textcolor{ampc}{\textbf{amp}}, 5--8 \textcolor{modc}{\textbf{mod}}: A, D, R =
+1 ms \(\cdot 10^{4k}\) (1 ms -- 10 s, a decade per quarter of the travel); S = level 0 -- 1.
+Exponential segments; attack aims at 1.2: a concave rise, fast at first (analog style).\\[0.5mm]
+\textcolor{modc}{\textbf{Mod env}} \(\to\) cutoff (ENV AMT), and \(\to\) timbre (\(\pm\)0.5) with
+MOD\(\to\)TIMBRE. \textcolor{modc}{\textbf{CYCLE}} (Loop): it loops attack/decay while a key is held.\\[0.5mm]
+\textcolor{fltc}{\textbf{Filter}}: 12 dB/oct state-variable (LP/BP/HP, BP normalised).
+KEY TRACK (on at power-on): cutoff follows the keys, 1 oct/oct around note 60 (middle C).
+VELO\(\to\)CUT: up to +2 octaves for a hard hit.
+\end{card}
+\begin{card}{LFO (one, shared by the voices)}
+TARGET: \textbf{timbre} \(\to\) color \(\to\) cutoff (\(\pm\)3 oct) \(\to\) pitch (\(\pm\)2 st).\quad
+WAVE: \textbf{sine} \(\to\) triangle \(\to\) saw \(\to\) square \(\to\) S\&H.\quad
+TAP LFO: two taps 0.1--4 s apart set the period; LFO RATE takes over again when turned.
+\end{card}
+\end{minipage}\hfill
+\begin{minipage}[t]{66mm}\vspace{0pt}
+\begin{card}{Pads: shapes, two banks}
+\fontsize{6.4}{7.4}\selectfont
+\begin{tabularx}{\linewidth}{@{}L L@{}}
+\textbf{Bank 1} (0--15) & \textbf{Bank 2} (16--31) \\
+0 ring mod \quad 1 saw swarm & 16 bowed \quad 17 blown \\
+2 comb \quad 3 toy & 18 fluted \quad 19 bell \\
+4--7 filter LP/peak/BP/HP & 20 drum \quad 21 kick \\
+8 VOSIM \quad 9 vowel & 22 cymbal \quad 23 snare \\
+10 vowel FOF \quad 11 harmonics & 24 wavetables \quad 25 wave map \\
+12 FM \quad 13 feedback FM & 26 wave line \quad 27 paraphonic \\
+14 chaotic FM \quad 15 plucked & 28 filtered noise \quad 29 twin peaks \\
+ & 30 clocked noise \quad 31 granular \\
+\end{tabularx}
+Top row = first 8, bottom row = next 8. 32 particle noise and 33 digital modulation:
+\(\blacktriangleright\) from 31, or the SHAPE knob. Strike-type shapes (plucked, bell, drums)
+are struck on each key press.
+\end{card}
+\begin{card}{Notes}
+3 voices. Power-on: saw swarm, LP, key tracking on, delay off. RESET (Undo) restores that sound
+and keeps the page. The buttons' states are \textbf{not shown} (no LED feedback yet). Every press
+moves to the next option, so count, or listen.
+\end{card}
+\end{minipage}\hfill
+\begin{minipage}[t]{63mm}\vspace{0pt}
+\begin{card}{The Launchkey's own features}
+They make notes, so they play freak as well (set them on the Launchkey, see its user guide):\\[0.4mm]
+\textbf{Arp}: up, down, up/down, as played, random, chord, mutate; 1/4 -- 1/32T; 1--4 oct;
+latch, gate, swing, rhythm.\\
+\textbf{Scale}: minor, major, \textbf{Dorian}, \textbf{Mixolydian}, Phrygian, harmonic minor,
+minor/major pentatonic.\\
+\textbf{Fixed chord}, octave \(\pm\), transpose.\\[0.4mm]
+{\color{black!55} Not yet tested with freak.}
+\end{card}
+\begin{card}{Signal path and load}
+3 \(\times\) (Braids \(\to\) SVF \(\to\) amp env \(\times\) velocity) \(\to\) delay \(\to\)
+Elements reverb \(\to\) VOL. Velocity: soft notes keep \(\frac14\) of the level.
+DSP 52\,\%, patch RAM 41 of 44 KB (Axoloti Core, Ksoloti 1.1.0).
+\end{card}
+\end{minipage}
+
+\end{document}

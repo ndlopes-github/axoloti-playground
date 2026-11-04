@@ -1,0 +1,36 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="fx_delay" uuid="d54a1d76-1ced-4f38-a49c-653b7348041f">
+      <sDescription>Feedback delay for the freak synth: 10 ms .. 1.5 s, feedback up to 0.95 with a low-pass in the loop, and a wet/dry mix. Time, feedback, mix and on/off come from the launchkey_ctl control bus. Mono in; the same wet signal goes to both outputs. 300 KB of SDRAM.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets>
+         <frac32buffer name="in"/>
+      </inlets>
+      <outlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/launchkey_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[static const int32_t kLen = 76800;  // 1.6 s at 48 kHz
+freak::Delay dl;
+float wet;  // smoothed wet gain, so on/off and mix changes do not click]]></code.declaration>
+      <code.init><![CDATA[dl.init((float *)sdram_malloc(kLen * sizeof(float)), kLen);  // NULL: delay silent
+wet = 0.0f;]]></code.init>
+      <code.krate><![CDATA[const freak::Bus &b = freak::bus();
+const float d = b.delay_t * freak::kSampleRate;
+for (int i = 0; i < BUFSIZE; i++) {
+   wet += 0.002f * (b.delay_mix - wet);  // ~10 ms smoothing
+   const float x = inlet_in[i] * (1.0f / (1 << 27));
+   // Off: feed silence, so the echoes die away instead of stopping dead.
+   const float y = dl.process(b.delay_on ? x : 0.0f, d, b.delay_fb);
+   const int32_t out = (int32_t)((x + wet * y) * (1 << 27));
+   outlet_l[i] = out;
+   outlet_r[i] = out;
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

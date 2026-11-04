@@ -4,3 +4,8 @@ tools/axo_dfu
 *~
 *.swp
 .DS_Store
+tests/run_tests
+docs/*.aux
+docs/*.log
+docs/*.fls
+docs/*.fdb_latexmk

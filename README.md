@@ -5,9 +5,14 @@ Launchkey 49 MK3** plugged into the board's USB host port. The aim is jazzy
 chords, neo-soul, nu-jazz and broken beat, with "strange" Freak-style digital
 oscillators and effects.
 
-Status: `patches/freak/freak_v0.axp` plays. It has 3 voices of the Braids
-digital oscillator (34 shapes), an ADSR, and the Elements reverb, all
-controlled from the Launchkey.
+Status: **`patches/freak/freak_v1.axp`** is the current synth. It has 3
+voices, each a Braids oscillator (34 shapes) into a state-variable filter
+with an amp envelope, a mod envelope and glide. One LFO is shared by the
+voices, followed by a delay and the Elements reverb. Every control of the
+Launchkey is mapped: two knob pages, faders, fader buttons, pads as shape
+banks, and transport buttons. See the cheat sheet,
+[`docs/cheatsheet.pdf`](docs/cheatsheet.pdf). `freak_v0.axp` is the first,
+simpler version.
 
 ## Hardware and software
 
@@ -41,9 +46,14 @@ controlled from the Launchkey.
 
 | Path | What |
 |---|---|
-| `objects/braids_osc.axo` | Braids digital macro-oscillator. Inputs: pitch, trig (strike), timbre, colour, shape, plus `shapecv`, which spans all 34 shapes from a knob. |
+| `lib/launchkey_ctl.h` | The whole Launchkey mapping: pages, soft takeover, toggles, pads, tap tempo, LFO. It publishes everything on a control bus. Single source of truth for the cheat sheet. |
+| `lib/freak_dsp.h` | Envelopes, TPT state-variable filter, LFO, glide, delay, and fast exp2/sin/tan (no libm). Error bounds are in the comments and checked by the tests. |
+| `tests/test_freak.cpp` | Host unit tests (`make test`, with ASan/UBSan). |
+| `objects/launchkey_ctl.axo`, `freak_voice.axo`, `fx_delay.axo` | The synth's objects: control hub, one voice, delay. They talk through the control bus, not through wires. |
+| `objects/braids_osc.axo` | Stand-alone Braids digital macro-oscillator, with inlets: pitch, trig (strike), timbre, colour, shape and `shapecv`. |
 | `third_party/braids/` | Upstream Braids `digital_oscillator.cc` (MIT), adapted to Ksoloti's firmware headers. The changes are listed in its README. |
-| `patches/freak/freak_v0.axp` | The playable patch (knob/fader map in its notes). |
+| `patches/freak/freak_v1.axp` | The synth. `freak_v0.axp` is the first version (knob/fader map in its notes). |
+| `docs/cheatsheet.tex`, `.pdf` | One-page A4 card for playing freak v1 (`make cheatsheet`). |
 | `patches/bench_*` | Silent DSP-load benchmarks. |
 | `patches/dev/midi_monitor.axp`, `objects/dev/` | Forwards the USB-host controller's MIDI to the laptop, for mapping controllers. |
 | `tools/axo_dfu.c` | Puts the board into Rescue Mode (DFU) over USB, without pressing S1. |
@@ -60,6 +70,7 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
 | 1 Braids voice | 2.5–8.5 %, depending on shape (worst: harmonics) | 25 KB |
 | 3 Braids voices, worst shape | 23 % | 25.8 KB, code shared |
 | `freak_v0` (3 voices + Elements reverb) | 33 % | 31 KB |
+| `freak_v1` (3 voices with filter and envelopes + delay + reverb) | 52 % | 41.2 KB (91 %) |
 | Elements reverb / diffuser / string / tube | 19.5 / 7.5 / 5 / 4.5 % | ~0 (code in firmware) |
 | Warps | 46 % | ~0 |
 | Clouds | 79–103 % | ~0, too heavy next to voices |

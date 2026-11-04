@@ -1,0 +1,32 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="launchkey_ctl" uuid="203ca70d-d6dd-45ef-a8d4-dd2e080b0d66">
+      <sDescription>Launchkey 49 MK3 control hub for the freak synth. It reads every knob, fader, button, pad and wheel (standalone mode) and publishes the sound settings on a control bus that freak_voice and fx_delay read. The mapping lives in lib/launchkey_ctl.h; docs/cheatsheet.pdf documents it. Use one per patch.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32.positive name="revamount" description="to fx/lmnts/reverb amount"/>
+         <frac32.positive name="revtime"/>
+         <frac32.positive name="revdiffusion"/>
+         <frac32.positive name="revlowpass"/>
+         <frac32.positive name="master" description="gain for gain/vca, 64 = unity"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/launchkey_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::Launchkey lk;]]></code.declaration>
+      <code.init><![CDATA[lk.init();
+lk.tick();]]></code.init>
+      <code.krate><![CDATA[lk.tick();
+const freak::Bus &b = freak::bus();
+outlet_revamount = (int32_t)(b.rev_amount * (1 << 27));
+outlet_revtime = (int32_t)(b.rev_time * (1 << 27));
+outlet_revdiffusion = (int32_t)(b.rev_diff * (1 << 27));
+outlet_revlowpass = (int32_t)(b.rev_lp * (1 << 27));
+outlet_master = (int32_t)(b.master * (1 << 27));]]></code.krate>
+      <code.midihandler><![CDATA[lk.midi(status, data1, data2);]]></code.midihandler>
+   </obj.normal>
+</objdefs>
