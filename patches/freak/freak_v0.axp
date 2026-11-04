@@ -1,0 +1,192 @@
+<patch-1.0 appVersion="1.1.0">
+   <patcher type="patch/patcher" name="voices" x="14" y="14">
+      <params>
+         <frac32.s.map name="env:a" MidiCC="71" value="-40.0"/>
+         <frac32.s.map name="env:d" MidiCC="72" value="10.0"/>
+         <frac32.u.map name="env:s" MidiCC="73" value="40.0"/>
+         <frac32.s.map name="env:r" MidiCC="74" value="20.0"/>
+      </params>
+      <attribs>
+         <combo attributeName="poly" selection="3"/>
+      </attribs>
+      <subpatch appVersion="1.1.0">
+         <obj type="midi/in/keyb" name="keyb" x="14" y="14">
+            <params/>
+            <attribs/>
+         </obj>
+         <obj type="midi/in/cc" name="cc_shape" x="14" y="168">
+            <params/>
+            <attribs>
+               <spinner attributeName="cc" value="21"/>
+               <spinner attributeName="default" value="0"/>
+            </attribs>
+         </obj>
+         <obj type="midi/in/cc" name="cc_timbre" x="14" y="238">
+            <params/>
+            <attribs>
+               <spinner attributeName="cc" value="22"/>
+               <spinner attributeName="default" value="64"/>
+            </attribs>
+         </obj>
+         <obj type="midi/in/cc" name="cc_color" x="14" y="308">
+            <params/>
+            <attribs>
+               <spinner attributeName="cc" value="23"/>
+               <spinner attributeName="default" value="64"/>
+            </attribs>
+         </obj>
+         <obj type="braids_osc" name="osc" x="210" y="14">
+            <params/>
+            <attribs/>
+         </obj>
+         <obj type="env/adsr" name="env" x="210" y="252">
+            <params>
+               <frac32.s.map name="a" onParent="true" value="-40.0"/>
+               <frac32.s.map name="d" onParent="true" value="10.0"/>
+               <frac32.u.map name="s" onParent="true" value="40.0"/>
+               <frac32.s.map name="r" onParent="true" value="20.0"/>
+            </params>
+            <attribs/>
+         </obj>
+         <obj type="math/*" uuid="922423f2db9f222aa3e5ba095778288c446da47a" name="velo_x_env" x="364" y="252">
+            <params/>
+            <attribs/>
+         </obj>
+         <obj type="math/div 4" name="headroom" x="462" y="252">
+            <params/>
+            <attribs/>
+         </obj>
+         <obj type="gain/vca" name="vca" x="560" y="14">
+            <params/>
+            <attribs/>
+         </obj>
+         <obj type="patch/outlet a" name="out" x="672" y="14">
+            <params/>
+            <attribs/>
+         </obj>
+         <nets>
+            <net>
+               <source obj="keyb" outlet="note"/>
+               <dest obj="osc" inlet="pitch"/>
+            </net>
+            <net>
+               <source obj="keyb" outlet="gate"/>
+               <dest obj="osc" inlet="trig"/>
+               <dest obj="env" inlet="gate"/>
+            </net>
+            <net>
+               <source obj="keyb" outlet="velocity"/>
+               <dest obj="velo_x_env" inlet="a"/>
+            </net>
+            <net>
+               <source obj="env" outlet="env"/>
+               <dest obj="velo_x_env" inlet="b"/>
+            </net>
+            <net>
+               <source obj="velo_x_env" outlet="result"/>
+               <dest obj="headroom" inlet="in"/>
+            </net>
+            <net>
+               <source obj="headroom" outlet="out"/>
+               <dest obj="vca" inlet="v"/>
+            </net>
+            <net>
+               <source obj="cc_shape" outlet="midiCC"/>
+               <dest obj="osc" inlet="shapecv"/>
+            </net>
+            <net>
+               <source obj="cc_timbre" outlet="midiCC"/>
+               <dest obj="osc" inlet="timbre"/>
+            </net>
+            <net>
+               <source obj="cc_color" outlet="midiCC"/>
+               <dest obj="osc" inlet="color"/>
+            </net>
+            <net>
+               <source obj="osc" outlet="wave"/>
+               <dest obj="vca" inlet="a"/>
+            </net>
+            <net>
+               <source obj="vca" outlet="o"/>
+               <dest obj="out" inlet="outlet"/>
+            </net>
+         </nets>
+         <settings>
+            <subpatchmode>polyphonic</subpatchmode>
+            <MidiChannel>1</MidiChannel>
+            <NPresets>8</NPresets>
+            <NPresetEntries>32</NPresetEntries>
+            <NModulationSources>8</NModulationSources>
+            <NModulationTargetsPerSource>8</NModulationTargetsPerSource>
+         </settings>
+         <notes><![CDATA[One Braids voice: shape/timbre/color from knobs 1-3 (CC 21-23), velocity x ADSR, /4 headroom.]]></notes>
+      </subpatch>
+   </patcher>
+   <obj type="fx/lmnts/reverb" name="reverb" x="210" y="14">
+      <params>
+         <frac32.u.map name="amount" MidiCC="24" value="20.0"/>
+         <frac32.u.map name="time" MidiCC="25" value="40.0"/>
+         <frac32.u.map name="diffusion" MidiCC="26" value="40.0"/>
+         <frac32.u.map name="gain" value="32.0"/>
+         <frac32.u.map name="lowpass" MidiCC="27" value="40.0"/>
+      </params>
+      <attribs/>
+   </obj>
+   <obj type="midi/in/cc" name="cc_master" x="210" y="252">
+      <params/>
+      <attribs>
+         <spinner attributeName="cc" value="79"/>
+         <spinner attributeName="default" value="100"/>
+      </attribs>
+   </obj>
+   <obj type="gain/vca" name="master_l" x="406" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="gain/vca" name="master_r" x="406" y="84">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="audio/out stereo" name="dac" x="518" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets>
+      <net>
+         <source obj="voices" outlet="out"/>
+         <dest obj="reverb" inlet="l"/>
+         <dest obj="reverb" inlet="r"/>
+      </net>
+      <net>
+         <source obj="reverb" outlet="l"/>
+         <dest obj="master_l" inlet="a"/>
+      </net>
+      <net>
+         <source obj="reverb" outlet="r"/>
+         <dest obj="master_r" inlet="a"/>
+      </net>
+      <net>
+         <source obj="cc_master" outlet="midiCC"/>
+         <dest obj="master_l" inlet="v"/>
+         <dest obj="master_r" inlet="v"/>
+      </net>
+      <net>
+         <source obj="master_l" outlet="o"/>
+         <dest obj="dac" inlet="left"/>
+      </net>
+      <net>
+         <source obj="master_r" outlet="o"/>
+         <dest obj="dac" inlet="right"/>
+      </net>
+   </nets>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+      <MidiChannel>1</MidiChannel>
+   </settings>
+   <notes><![CDATA[freak v0: 3-voice Braids poly synth -> Elements reverb.
+Launchkey 49 MK3 (docs/launchkey49mk3_map.md):
+  knob 1-3 (CC 21-23): shape (34), timbre, color
+  knob 4-7 (CC 24-27): reverb amount, time, diffusion, lowpass
+  fader 1-4 (CC 71-74): attack, decay, sustain, release
+  fader 9 (CC 79): master volume]]></notes>
+</patch-1.0>

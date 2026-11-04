@@ -1,0 +1,11 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="../../objects/dev/midi_host_to_usb" name="fwd_1" x="14" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets/>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+   </settings>
+   <notes><![CDATA[Forwards the USB-host controller's MIDI to the laptop. Go Live, then: aseqdump -p "Axoloti Core"]]></notes>
+</patch-1.0>

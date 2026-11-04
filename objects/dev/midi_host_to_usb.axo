@@ -1,0 +1,28 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="midi_host_to_usb" uuid="3b1f8c52-5d0e-4a8e-9a77-0c4f2f6e1a10">
+      <sDescription>Development aid: forwards every MIDI message arriving from the USB host port (a controller plugged into the board) to the USB device port, so the laptop can log it (aseqdump -p "Axoloti Core"). The first message from each host port is also printed to the patcher log, to show which ports exist.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <code.declaration><![CDATA[bool seen[16];]]></code.declaration>
+      <code.init><![CDATA[for (int i = 0; i < 16; i++)
+   seen[i] = false;]]></code.init>
+      <code.midihandler><![CDATA[if (dev == MIDI_DEVICE_USB_HOST) {
+   if (port < 16 && !seen[port]) {
+      seen[port] = true;
+      LogTextMessage("USB host port %d: first message %02x %02x %02x", port, status, data1, data2);
+   }
+   uint8_t kind = status & 0xF0;
+   if (status >= 0xF0)
+      MidiSend1(MIDI_DEVICE_USB_DEVICE, 1, status);
+   else if (kind == 0xC0 || kind == 0xD0) /* program change, channel pressure: 2 bytes */
+      MidiSend2(MIDI_DEVICE_USB_DEVICE, 1, status, data1);
+   else
+      MidiSend3(MIDI_DEVICE_USB_DEVICE, 1, status, data1, data2);
+}]]></code.midihandler>
+   </obj.normal>
+</objdefs>

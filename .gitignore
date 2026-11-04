@@ -1,0 +1,6 @@
+# compiled tool
+tools/axo_dfu
+# editor / OS clutter
+*~
+*.swp
+.DS_Store

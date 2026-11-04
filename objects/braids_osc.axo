@@ -1,0 +1,75 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="braids_osc" uuid="fa0ae0dd-8e85-427d-ba66-317a5c3484ec">
+      <sDescription>Braids digital macro-oscillator (Mutable Instruments, MIT): 34 shapes.
+0 ring mod, 1 saw swarm, 2 comb, 3 toy, 4-7 filter LP/peak/BP/HP, 8 vosim, 9 vowel, 10 vowel fof, 11 harmonics,
+12 fm, 13 feedback fm, 14 chaotic fm, 15 plucked, 16 bowed, 17 blown, 18 fluted, 19 bell, 20 drum, 21 kick,
+22 cymbal, 23 snare, 24 wavetables, 25 wave map, 26 wave line, 27 wave paraphonic, 28 filtered noise,
+29 twin peaks noise, 30 clocked noise, 31 granular cloud, 32 particle noise, 33 digital modulation.
+trig strikes the struck/plucked shapes. See third_party/braids/README.md.</sDescription>
+      <author>Emilie Gillet (DSP), Axoloti port</author>
+      <license>MIT</license>
+      <inlets>
+         <frac32.bipolar name="pitch" description="pitch, added to the param (0 = E4)"/>
+         <bool32.rising name="trig" description="strike"/>
+         <frac32.bipolar name="timbre" description="added to the param"/>
+         <frac32.bipolar name="color" description="added to the param"/>
+         <int32 name="shape" description="added to the param"/>
+         <frac32.positive name="shapecv" description="0..64 sweeps all 34 shapes (for a MIDI CC knob); added to the param"/>
+      </inlets>
+      <outlets>
+         <frac32buffer name="wave"/>
+      </outlets>
+      <displays/>
+      <params>
+         <frac32.s.map.pitch name="pitch"/>
+         <frac32.u.map name="timbre"/>
+         <frac32.u.map name="color"/>
+         <int32 name="shape">
+            <MinValue i="0"/>
+            <MaxValue i="33"/>
+         </int32>
+      </params>
+      <attribs/>
+      <includes>
+         <include>../third_party/braids/digital_oscillator.cc</include>
+      </includes>
+      <code.declaration><![CDATA[// The oscillator lives in raw storage, built with placement new and never
+// destroyed. braids::DigitalOscillator has a user-provided destructor; as a
+// direct member of a polyphonic voice (a function-local static array in the
+// generated code) it made the compiler register that destructor with
+// newlib's atexit(), and that patch hung the board at start.
+alignas(braids::DigitalOscillator) uint8_t osc_mem[sizeof(braids::DigitalOscillator)];
+braids::DigitalOscillator *osc;
+uint8_t sync[BUFSIZE];
+int16_t buf[BUFSIZE];
+int32_t prev_trig;
+
+static int16_t clamp_u15(int32_t v) { return v < 0 ? 0 : (v > 32767 ? 32767 : v); }]]></code.declaration>
+      <code.init><![CDATA[osc = new (osc_mem) braids::DigitalOscillator();
+osc->Init(); // also allocates its 8 KB of delay lines in SDRAM
+memset(sync, 0, sizeof(sync));
+prev_trig = 0;]]></code.init>
+      <code.krate><![CDATA[// shapecv: a CC value v (0..127) arrives as v << 20; (v * 34) >> 7 maps 0..127
+// onto 0..33 in near-equal steps. Shifting first keeps the product in 32 bits.
+int32_t shape = param_shape + inlet_shape + (((inlet_shapecv >> 20) * 34) >> 7);
+shape = shape < 0 ? 0 : (shape > 33 ? 33 : shape);
+osc->set_shape((braids::DigitalOscillatorShape)shape);
+
+// Axoloti pitch is (MIDI note - 64) << 21; Braids wants MIDI note << 7, with
+// tables made for 96 kHz: one octave up gives the right pitch at 48 kHz.
+int32_t p = ((64 + 12) << 7) + ((param_pitch + inlet_pitch) >> 14);
+osc->set_pitch(p < 0 ? 0 : (p > 32767 ? 32767 : p));
+
+// frac32.u full scale is 1 << 27; Braids parameters are 0..32767.
+osc->set_parameters(clamp_u15((param_timbre + inlet_timbre) >> 12),
+                   clamp_u15((param_color + inlet_color) >> 12));
+
+if (inlet_trig && !prev_trig)
+   osc->Strike();
+prev_trig = inlet_trig;
+
+osc->Render(sync, buf, BUFSIZE);
+for (int i = 0; i < BUFSIZE; i++)
+   outlet_wave[i] = (int32_t)buf[i] << 12; // int16 full scale -> Q27 full scale]]></code.krate>
+   </obj.normal>
+</objdefs>
