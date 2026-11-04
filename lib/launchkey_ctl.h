@@ -71,6 +71,13 @@ static const uint8_t kKnobInit[NUM_PAGES][8] = {
 static const uint8_t kFaderInit[NUM_FADERS] = {10, 70, 90, 70, 0, 70, 0, 70, 100};
 const int kInitShape = 1;  // saw swarm
 
+// Events for the patcher log (launchkey_ctl.axo prints them), to debug the
+// mapping on the board: page changes, resets, knobs catching up, and CCs the
+// mapping does not handle (each (channel, CC) once).
+enum { EV_PAGE, EV_RESET, EV_PICKED, EV_UNMAPPED };
+struct Event { uint8_t type, a, b, c; };
+const int kEventQueue = 16;
+
 // CC value -> unit interval
 inline float unit(uint8_t v) { return (float)v * (1.0f / 127.0f); }
 // Envelope time: 1 ms * 10^(4 v/127), so 1 ms .. 10 s, a decade per 32 steps.
@@ -79,6 +86,8 @@ inline float env_time(uint8_t v) { return 0.001f * fast_exp2(13.2877124f * unit(
 struct Launchkey {
     uint8_t knob[NUM_PAGES][8];
     bool picked[NUM_PAGES][8];
+    int16_t anchor_phys[NUM_PAGES][8];  // knob position when pickup started, -1 = not yet seen
+    uint8_t anchor_val[NUM_PAGES][8];   // stored value at that moment
     uint8_t phys[8];     // last position of each physical knob
     bool phys_known[8];
     uint8_t fader[NUM_FADERS];
@@ -91,12 +100,38 @@ struct Launchkey {
     float lfo_hz;        // set by knob 7 or by tap tempo, whichever was last
     uint32_t ticks, last_tap;
     Lfo lfo;
+    Event events[kEventQueue];
+    uint8_t ev_head, ev_count;
+    uint32_t unmapped_seen[16][4];  // bit (ch, cc): already reported
+
+    void push_event(uint8_t type, uint8_t a, uint8_t b, uint8_t c) {
+        if (ev_count == kEventQueue) return;  // full: drop
+        Event &e = events[(ev_head + ev_count) % kEventQueue];
+        e.type = type; e.a = a; e.b = b; e.c = c;
+        ev_count++;
+    }
+    bool pop_event(Event &e) {
+        if (ev_count == 0) return false;
+        e = events[ev_head];
+        ev_head = (uint8_t)((ev_head + 1) % kEventQueue);
+        ev_count--;
+        return true;
+    }
+    void unmapped(uint8_t ch, uint8_t num, uint8_t v) {
+        uint32_t &w = unmapped_seen[ch][num >> 5];
+        const uint32_t bit = 1u << (num & 31);
+        if (w & bit) return;
+        w |= bit;
+        push_event(EV_UNMAPPED, (uint8_t)(ch + 1), num, v);
+    }
 
     void init() {
         for (int p = 0; p < NUM_PAGES; p++)
             for (int k = 0; k < 8; k++) {
                 knob[p][k] = kKnobInit[p][k];
                 picked[p][k] = (p == PAGE_SOUND);  // power-on page: knobs jump
+                anchor_phys[p][k] = -1;
+                anchor_val[p][k] = knob[p][k];
             }
         for (int k = 0; k < 8; k++) { phys[k] = 0; phys_known[k] = false; }
         for (int f = 0; f < NUM_FADERS; f++) fader[f] = kFaderInit[f];
@@ -110,6 +145,9 @@ struct Launchkey {
         lfo_hz = lfo_rate(knob[PAGE_SOUND][K_LFORATE]);
         ticks = 0; last_tap = 0;
         lfo.init();
+        ev_head = ev_count = 0;
+        for (int c = 0; c < 16; c++)
+            for (int w = 0; w < 4; w++) unmapped_seen[c][w] = 0;
     }
 
     // Reset to the power-on sound, keeping the page. Knobs whose stored value
@@ -123,37 +161,65 @@ struct Launchkey {
         init();
         for (int k = 0; k < 8; k++) { phys[k] = ph[k]; phys_known[k] = known[k]; }
         ticks = t;
+        page = p;  // the page does not change on a reset: no page event
         set_page(p);
+        push_event(EV_RESET, 0, 0, 0);
     }
 
     // LFO rate: 0.05 Hz * 400^(v/127), so 0.05 .. 20 Hz.
     static float lfo_rate(uint8_t v) { return 0.05f * fast_exp2(8.64385619f * unit(v)); }  // log2(400)
 
-    // Page switch: a knob is live on the new page only if the physical knob
-    // already sits within 2 steps of the stored value; otherwise it is picked
-    // up when it reaches or crosses that value (soft takeover).
+    // Page switch (and reset): a knob whose physical position differs from
+    // the stored value by more than 2 steps is "not caught up". It then uses
+    // scaled pickup (on_knob), anchored where it was when the page came up.
     void set_page(int p) {
+        if (p != page) push_event(EV_PAGE, (uint8_t)p, 0, 0);
         page = p;
         for (int k = 0; k < 8; k++) {
             const int d = (int)phys[k] - (int)knob[p][k];
             picked[p][k] = phys_known[k] && d >= -2 && d <= 2;
+            anchor_phys[p][k] = phys_known[k] ? phys[k] : -1;
+            anchor_val[p][k] = knob[p][k];
         }
     }
 
+    // Scaled pickup. With the anchor (a, s) = (knob position, stored value)
+    // at the start of the pickup, the value is
+    //   f(v) = s + (v - a)(127 - s)/(127 - a)  for v >= a,
+    //   f(v) = s - (a - v) s / a               for v <= a.
+    // f is continuous and nondecreasing, f(a) = s, f(0) = 0, f(127) = 127. So
+    // the value always moves the way the knob turns (no dead knob), there is
+    // no jump, and knob and value meet at an end of travel at the latest;
+    // they are caught up as soon as |f(v) - v| <= 1. Computing f from the
+    // anchor, not step by step, keeps one-step turns from rounding to zero.
+    static int scaled(int v, int a, int s) {
+        if (v >= a) return a >= 127 ? s : s + (v - a) * (127 - s) / (127 - a);
+        return a <= 0 ? s : s - ((a - v) * s + a - 1) / a;  // round away from s: a step always moves
+    }
+
     void on_knob(int k, uint8_t v) {
-        if (!picked[page][k]) {
-            const int now = (int)v - (int)knob[page][k];
-            const int before = (int)phys[k] - (int)knob[page][k];
-            const bool near = now >= -2 && now <= 2;
-            const bool crossed = phys_known[k] && ((before <= 0 && now >= 0) || (before >= 0 && now <= 0));
-            if (near || crossed) picked[page][k] = true;
+        const int p = page;
+        if (!picked[p][k]) {
+            if (anchor_phys[p][k] < 0) {  // first position seen on this page
+                anchor_phys[p][k] = v;
+                anchor_val[p][k] = knob[p][k];
+            }
+            // Caught up within one step: keep f for this step (setting v
+            // could step back against the turn), follow exactly from now on.
+            const int f = scaled(v, anchor_phys[p][k], anchor_val[p][k]);
+            const int d = f - (int)v;
+            if (d >= -1 && d <= 1) {
+                picked[p][k] = true;
+                push_event(EV_PICKED, (uint8_t)p, (uint8_t)k, (uint8_t)f);
+            }
+            knob[p][k] = (uint8_t)f;
+        } else {
+            knob[p][k] = v;
         }
         phys[k] = v;
         phys_known[k] = true;
-        if (!picked[page][k]) return;
-        knob[page][k] = v;
-        if (page == PAGE_SOUND && k == K_SHAPE) shape = (v * kNumShapes) >> 7;  // 0..33, 3-4 steps each
-        if (page == PAGE_SOUND && k == K_LFORATE) lfo_hz = lfo_rate(v);
+        if (p == PAGE_SOUND && k == K_SHAPE) shape = (knob[p][k] * kNumShapes) >> 7;  // 0..33
+        if (p == PAGE_SOUND && k == K_LFORATE) lfo_hz = lfo_rate(knob[p][k]);
     }
 
     // Tap tempo (Click button): two taps 0.1..4 s apart set the LFO period.
@@ -192,8 +258,11 @@ struct Launchkey {
         if (type == 0xB0 && ch == 0) {
             if (d1 >= 21 && d1 <= 28) on_knob(d1 - 21, d2);
             else if (d1 >= 71 && d1 <= 79) fader[d1 - 71] = d2;
-            else if (d1 >= 11 && d1 <= 19 && d2 > 0) on_button(d1 - 11);
+            else if (d1 >= 11 && d1 <= 19) { if (d2 > 0) on_button(d1 - 11); }
             else if (d1 == 1) modwheel = unit(d2);
+            else unmapped(ch, d1, d2);
+        } else if (type == 0xB0 && ch != 15) {
+            unmapped(ch, d1, d2);
         } else if (type == 0xE0 && ch == 0) {
             bend = (float)(((int)d2 << 7 | d1) - 8192) * (1.0f / 8192.0f);
         } else if (type == 0x90 && ch == 9 && d2 > 0) {
@@ -210,6 +279,8 @@ struct Launchkey {
             case 76: on_tap(); break;               // Click: tap tempo
             case 77: reset_sound(); break;          // Undo: back to the power-on sound
             case 118: cycle = !cycle; break;        // Loop: cycling mod envelope
+            case 74: case 75: case 106: case 107: case 115: case 116: case 117: break;  // free
+            default: unmapped(ch, d1, d2);
             }
         }
     }

@@ -21,6 +21,27 @@
       <code.init><![CDATA[lk.init();
 lk.tick();]]></code.init>
       <code.krate><![CDATA[lk.tick();
+// Mapping events to the patcher log, at most one per 64 ticks (21 ms): the
+// log keeps only one message per burst. No-op when no patcher is connected.
+if ((lk.ticks & 63) == 0) {
+   freak::Event e;
+   if (lk.pop_event(e)) {
+      switch (e.type) {
+      case freak::EV_PAGE:
+         LogTextMessage("freak: knob page %s", e.a == freak::PAGE_FX ? "FX" : "SOUND");
+         break;
+      case freak::EV_RESET:
+         LogTextMessage("freak: reset to the power-on sound");
+         break;
+      case freak::EV_PICKED:
+         LogTextMessage("freak: knob %d caught up on page %s at %d", e.b + 1, e.a == freak::PAGE_FX ? "FX" : "SOUND", e.c);
+         break;
+      case freak::EV_UNMAPPED:
+         LogTextMessage("freak: unmapped CC %d on ch %d (value %d)", e.b, e.a, e.c);
+         break;
+      }
+   }
+}
 const freak::Bus &b = freak::bus();
 outlet_revamount = (int32_t)(b.rev_amount * (1 << 27));
 outlet_revtime = (int32_t)(b.rev_time * (1 << 27));

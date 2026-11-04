@@ -217,12 +217,14 @@ static void test_launchkey() {
     // pages and soft takeover
     cc(k, 1, 25, 100);  // knob 5 physically at 100 on the sound page (resonance)
     cc(k, 16, 52, 127); CHECK(k.page == PAGE_FX, "arrow down -> FX page");
-    const uint8_t stored = k.knob[PAGE_FX][K_RAMOUNT];  // 40
-    cc(k, 1, 25, 90); CHECK(k.knob[PAGE_FX][K_RAMOUNT] == stored, "knob not picked up yet must not change the value");
-    cc(k, 1, 25, (int)stored + 1); CHECK(k.knob[PAGE_FX][K_RAMOUNT] == stored + 1, "pick-up within 2 steps");
+    // scaled pickup: knob at 100, stored 40 -> f(v) = 40 - (100 - v) 40 / 100
+    CHECK(k.knob[PAGE_FX][K_RAMOUNT] == 40 && !k.picked[PAGE_FX][K_RAMOUNT], "FX reverb amount stored 40, not caught up");
+    cc(k, 1, 25, 90); CHECK(k.knob[PAGE_FX][K_RAMOUNT] == 36, "scaled: 10 steps down move 40 -> 36 (got %d)", k.knob[PAGE_FX][K_RAMOUNT]);
+    cc(k, 1, 25, 0); CHECK(k.knob[PAGE_FX][K_RAMOUNT] == 0 && k.picked[PAGE_FX][K_RAMOUNT], "meets the knob at 0");
     cc(k, 1, 25, 60); CHECK(k.knob[PAGE_FX][K_RAMOUNT] == 60, "picked knob follows");
-    cc(k, 1, 26, 127);  // knob 6 at 127, stored reverb time 64
-    cc(k, 1, 26, 10); CHECK(k.knob[PAGE_FX][K_RTIME] == 10, "crossing the stored value picks up");
+    // a knob first seen on this page anchors there and then scales: 127 -> 10 takes reverb time 64 -> 5
+    cc(k, 1, 26, 127); CHECK(k.knob[PAGE_FX][K_RTIME] == 64, "first position only anchors");
+    cc(k, 1, 26, 10); CHECK(k.knob[PAGE_FX][K_RTIME] == 5, "scaled from the anchor (got %d)", k.knob[PAGE_FX][K_RTIME]);
     cc(k, 1, 19, 127); CHECK(k.page == PAGE_SOUND, "fader button 9 toggles the page");
     CHECK(k.knob[PAGE_SOUND][K_RESO] == 100, "sound page resonance kept at 100");
 
@@ -246,12 +248,90 @@ static void test_launchkey() {
           "reset: page %d shape %d fmode %d", k.page, k.shape, k.fmode);
 }
 
+// The reported failure: after a page round trip, a knob that moved meanwhile
+// must still respond, in the direction it is turned, even one step at a time.
+static void test_knobs_never_dead() {
+    Launchkey k;
+    k.init();
+    for (int v = 64; v <= 100; v++) cc(k, 1, 22, v);  // timbre knob to 100 on SOUND
+    CHECK(k.knob[PAGE_SOUND][K_TIMBRE] == 100, "timbre follows on the power-on page");
+    cc(k, 1, 19, 127);                                   // fader button 9: FX page
+    for (int v = 100; v >= 20; v--) cc(k, 1, 22, v);     // the knob moves on the FX page
+    cc(k, 1, 19, 127);                                   // back to SOUND
+    // timbre is stored at 100, the knob sits at 20: turning it down one step
+    // at a time must lower timbre (scaled pickup), never leave it stuck
+    int prev = k.knob[PAGE_SOUND][K_TIMBRE];
+    int moved = 0;
+    for (int v = 19; v >= 0; v--) {
+        cc(k, 1, 22, v);
+        const int now = k.knob[PAGE_SOUND][K_TIMBRE];
+        CHECK(now <= prev, "turning down raised the value (%d -> %d)", prev, now);
+        if (now < prev) moved++;
+        prev = now;
+    }
+    CHECK(moved >= 15, "only %d of 20 single steps moved the value", moved);
+    CHECK(k.knob[PAGE_SOUND][K_TIMBRE] == 0 && k.picked[PAGE_SOUND][K_TIMBRE], "meets the knob at the end of travel");
+    // turning up instead: from stored 100 with the knob at 20 the value rises
+    // too, and both reach 127 together
+    k.init();
+    for (int v = 64; v <= 100; v++) cc(k, 1, 22, v);
+    cc(k, 16, 52, 127);
+    for (int v = 100; v >= 20; v--) cc(k, 1, 22, v);
+    cc(k, 16, 51, 127);
+    prev = k.knob[PAGE_SOUND][K_TIMBRE];
+    for (int v = 21; v <= 127; v++) {
+        cc(k, 1, 22, v);
+        CHECK(k.knob[PAGE_SOUND][K_TIMBRE] >= prev, "turning up lowered the value");
+        prev = k.knob[PAGE_SOUND][K_TIMBRE];
+    }
+    CHECK(prev == 127 && k.picked[PAGE_SOUND][K_TIMBRE], "meets at 127 (%d)", prev);
+    // once caught up the knob follows exactly
+    cc(k, 1, 22, 60);
+    CHECK(k.knob[PAGE_SOUND][K_TIMBRE] == 60, "picked knob follows exactly");
+}
+
+// Exhaustive check of the scaled-pickup map for every anchor (a, s).
+static void test_scaled_pickup_map() {
+    int bad = 0;
+    for (int a = 1; a <= 126; a++)
+        for (int s = 0; s <= 127; s++) {
+            int prev = -1;
+            for (int v = 0; v <= 127; v++) {
+                const int f = Launchkey::scaled(v, a, s);
+                if (f < 0 || f > 127 || f < prev) bad++;
+                prev = f;
+            }
+            if (Launchkey::scaled(a, a, s) != s || Launchkey::scaled(0, a, s) != 0 ||
+                Launchkey::scaled(127, a, s) != 127)
+                bad++;
+        }
+    CHECK(bad == 0, "scaled pickup: %d violations of monotone / f(a)=s / f(0)=0 / f(127)=127", bad);
+}
+
+// Event log: page changes, resets and unknown CCs are reported once.
+static void test_events() {
+    Launchkey k;
+    k.init();
+    Event e;
+    CHECK(!k.pop_event(e), "no events at power-on");
+    cc(k, 16, 52, 127);
+    CHECK(k.pop_event(e) && e.type == EV_PAGE && e.a == PAGE_FX, "page event");
+    cc(k, 1, 33, 5); cc(k, 1, 33, 6);
+    CHECK(k.pop_event(e) && e.type == EV_UNMAPPED && e.a == 1 && e.b == 33 && e.c == 5, "unmapped CC event");
+    CHECK(!k.pop_event(e), "an unmapped CC is reported once");
+    cc(k, 16, 77, 127);
+    CHECK(k.pop_event(e) && e.type == EV_RESET, "reset event");
+}
+
 int main() {
     test_fast_math();
     test_env();
     test_svf();
     test_lfo_glide_delay();
     test_launchkey();
+    test_knobs_never_dead();
+    test_scaled_pickup_map();
+    test_events();
     if (failures) {
         std::printf("%d check(s) failed\n", failures);
         return 1;
