@@ -25,7 +25,7 @@ const int kNumShapes = 34;  // Braids digital oscillator, table order
 
 // Everything the voices and effects read, in physical units.
 struct Bus {
-    int shape;            // 0..33
+    int shape;            // 0..33, set by track < > only
     float timbre, color;  // 0..1, LFO applied
     float cutoff_oct;     // cutoff = 20 Hz * 2^cutoff_oct, LFO applied
     float q;              // 0.5..20
@@ -40,6 +40,7 @@ struct Bus {
     float delay_t, delay_fb, delay_mix;  // s; 0..0.95; 0..1
     float rev_amount, rev_time, rev_diff, rev_lp;  // 0..1, to fx/lmnts/reverb
     float master;         // 0..1 gain
+    float spice;          // 0..1: per-note random variation in the voices (knob 1)
 };
 
 // One bus per patch. A namespace-scope POD in a header that every object of
@@ -52,7 +53,7 @@ inline Bus &bus() { return g_bus; }
 // Knob pages
 enum { PAGE_SOUND, PAGE_FX, NUM_PAGES };
 // PAGE_SOUND knobs
-enum { K_SHAPE, K_TIMBRE, K_COLOR, K_CUTOFF, K_RESO, K_ENVAMT, K_LFORATE, K_LFOAMT };
+enum { K_SPICE, K_TIMBRE, K_COLOR, K_CUTOFF, K_RESO, K_ENVAMT, K_LFORATE, K_LFOAMT };
 // PAGE_FX knobs
 enum { K_GLIDE, K_DTIME, K_DFB, K_DMIX, K_RAMOUNT, K_RTIME, K_RDIFF, K_RLP };
 // Faders 1..9
@@ -91,15 +92,15 @@ static const Preset kPresets[] = {
      {85, 70, 95, 95, 0, 70, 0, 70}, 0, LFO_TIMBRE, 0, P_KEYTRACK | P_DELAY},
     {"FM bass", 12, {{0, 32, 64, 42, 32, 95, 40, 0}, {32, 64, 20, 0, 20, 40, 40, 64}},
      {0, 64, 0, 32, 0, 64, 0, 32}, 0, LFO_TIMBRE, 0, P_KEYTRACK | P_VELCUT | P_GLIDE},
-    {"glass mallets", 19, {{0, 42, 32, 32, 20, 64, 40, 0}, {0, 64, 40, 20, 95, 95, 80, 80}},
+    {"glass mallets", 19, {{20, 42, 32, 32, 20, 64, 40, 0}, {0, 64, 40, 20, 95, 95, 80, 80}},
      {5, 90, 127, 95, 0, 70, 0, 70}, 2, LFO_TIMBRE, 0, P_KEYTRACK},
     {"chord stabs", 27, {{0, 64, 64, 100, 20, 64, 40, 0}, {0, 95, 64, 40, 40, 64, 64, 80}},
      {0, 64, 0, 50, 0, 70, 0, 70}, 0, LFO_TIMBRE, 0, P_KEYTRACK | P_DELAY},
-    {"granular weather", 31, {{0, 64, 95, 90, 30, 95, 40, 60}, {0, 70, 50, 30, 80, 90, 80, 70}},
+    {"granular weather", 31, {{40, 64, 95, 90, 30, 95, 40, 60}, {0, 70, 50, 30, 80, 90, 80, 70}},
      {40, 70, 100, 90, 10, 64, 0, 64}, 1, LFO_COLOR, 4, P_KEYTRACK | P_CYCLE},
-    {"pitched rain", 32, {{0, 32, 127, 100, 20, 64, 40, 0}, {0, 80, 95, 50, 95, 90, 90, 90}},
+    {"pitched rain", 32, {{30, 32, 127, 100, 20, 64, 40, 0}, {0, 80, 95, 50, 95, 90, 90, 90}},
      {0, 70, 100, 80, 0, 70, 0, 70}, 0, LFO_TIMBRE, 0, P_KEYTRACK | P_DELAY},
-    {"chaotic drone", 14, {{0, 50, 70, 80, 60, 80, 20, 40}, {0, 100, 80, 40, 90, 110, 100, 60}},
+    {"chaotic drone", 14, {{25, 50, 70, 80, 60, 80, 20, 40}, {0, 100, 80, 40, 90, 110, 100, 60}},
      {90, 90, 110, 100, 60, 80, 50, 90}, 1, LFO_CUTOFF, 1, P_KEYTRACK | P_DELAY | P_CYCLE},
 };
 const int kNumPresets = sizeof(kPresets) / sizeof(kPresets[0]);
@@ -118,9 +119,10 @@ inline float unit(uint8_t v) { return (float)v * (1.0f / 127.0f); }
 // Envelope time: 1 ms * 10^(4 v/127), so 1 ms .. 10 s, a decade per 32 steps.
 inline float env_time(uint8_t v) { return 0.001f * fast_exp2(13.2877124f * unit(v)); }  // log2(10^4)
 
-// SOUND knob 1 value for a shape: v = ceil(128 s / 34). Then
-// 34 v / 128 lies in [s, s + 34/128), so the knob map (34 v) >> 7 gives s back.
-inline uint8_t shape_knob(int s) { return (uint8_t)((s * 128 + kNumShapes - 1) / kNumShapes); }
+// Performance pads (bottom row): each acts only while held, by an amount set
+// by the strike velocity and then by the pad's pressure (poly aftertouch).
+enum { PERF_SWEEP, PERF_DIVE, PERF_VIBRATO, PERF_OCTAVE, PERF_THROW, PERF_SWELL, PERF_TIMBRE, PERF_COLOR, NUM_PERF };
+const float kVibratoHz = 6.0f;
 
 struct Launchkey {
     uint8_t knob[NUM_PAGES][8];
@@ -146,7 +148,8 @@ struct Launchkey {
     uint32_t ticks, last_tap;
     uint32_t rng;        // dice
     Lfo lfo;
-    int pad_bank;
+    float perf[NUM_PERF];  // performance pad amounts, 0..1 (0 = not held)
+    float vib_phase;
     Event events[kEventQueue];
     uint8_t ev_head, ev_count;
     uint32_t unmapped_seen[16][4];  // bit (ch, cc): already reported
@@ -176,7 +179,6 @@ struct Launchkey {
     void load(const Preset &p) {
         for (int g = 0; g < NUM_PAGES; g++)
             for (int k = 0; k < 8; k++) knob[g][k] = p.knob[g][k];
-        knob[PAGE_SOUND][K_SHAPE] = shape_knob(p.shape);
         for (int f = 0; f < 8; f++) fader[f] = p.fader[f];
         shape = p.shape;
         fmode = p.fmode; lfo_target = p.lfo_target; lfo_wave = p.lfo_wave;
@@ -205,7 +207,8 @@ struct Launchkey {
             for (int k = 0; k < 8; k++) anchor_val[g][k] = knob[g][k];
         for (int f = 0; f < NUM_FADERS; f++) fanchor_val[f] = fader[f];
         page = PAGE_SOUND;
-        pad_bank = 0;
+        for (int i = 0; i < NUM_PERF; i++) perf[i] = 0.0f;
+        vib_phase = 0.0f;
         bend = 0.0f; modwheel = 0.0f;
         ticks = 0; last_tap = 0;
         rng = 0x9E3779B9u;
@@ -269,7 +272,7 @@ struct Launchkey {
         if (rng == 0) rng = 1;
         shape = rnd_in(0, kNumShapes - 1);
         uint8_t *s = knob[PAGE_SOUND];
-        s[K_SHAPE] = shape_knob(shape);
+        s[K_SPICE] = (uint8_t)rnd_in(0, 50);
         s[K_TIMBRE] = (uint8_t)rnd_in(0, 127);
         s[K_COLOR] = (uint8_t)rnd_in(0, 127);
         s[K_CUTOFF] = (uint8_t)rnd_in(50, 120);
@@ -334,7 +337,6 @@ struct Launchkey {
             push_event(EV_PICKED, (uint8_t)p, (uint8_t)k, knob[p][k]);
         phys[k] = v;
         phys_known[k] = true;
-        if (p == PAGE_SOUND && k == K_SHAPE) shape = (knob[p][k] * kNumShapes) >> 7;  // 0..33
         if (p == PAGE_SOUND && k == K_LFORATE) lfo_hz = lfo_rate(knob[p][k]);
     }
 
@@ -367,11 +369,26 @@ struct Launchkey {
         }
     }
 
-    // Pads: top row = shapes 0..7, bottom row = 8..15; the round button right
-    // of the pads (104 upper, 105 lower) selects bank 0 or 1 (+16).
+    // Pads, by position: top row 0..7 = presets, bottom row 8..15 = the
+    // performance pads (PERF_*), left to right.
     static int pad_index(uint8_t note) {  // -1 if not a pad
         static const int8_t idx[16] = {8, 9, 10, 11, 0, 1, 2, 3, 12, 13, 14, 15, 4, 5, 6, 7};  // note 36..51
         return (note >= 36 && note <= 51) ? idx[note - 36] : -1;
+    }
+
+    // Pad events: strike, pressure (poly aftertouch) and release (note on with
+    // velocity 0, which is what the Launchkey sends, or note off).
+    void on_pad(uint8_t note, uint8_t v, bool pressure) {
+        const int i = pad_index(note);
+        if (i < 0) return;
+        if (i < 8) {  // top row: preset recall, on the strike only
+            if (!pressure && v > 0) {
+                apply_preset(i);
+                push_event(EV_PRESET, (uint8_t)i, 0, 0);
+            }
+            return;
+        }
+        perf[i - 8] = unit(v);  // strike sets the amount, pressure then follows
     }
 
     // Raw MIDI from the Launchkey's MIDI port.
@@ -387,39 +404,45 @@ struct Launchkey {
             unmapped(ch, d1, d2);
         } else if (type == 0xE0 && ch == 0) {
             bend = (float)(((int)d2 << 7 | d1) - 8192) * (1.0f / 8192.0f);
-        } else if (type == 0x90 && ch == 9 && d2 > 0) {
-            const int i = pad_index(d1);
-            if (i >= 0) shape = pad_bank * 16 + i;
+        } else if (type == 0x90 && ch == 9) {
+            on_pad(d1, d2, false);   // velocity 0 = release
+        } else if (type == 0x80 && ch == 9) {
+            on_pad(d1, 0, false);
+        } else if (type == 0xA0 && ch == 9) {
+            on_pad(d1, d2, true);    // pad pressure
         } else if (type == 0xB0 && ch == 15 && d2 > 0) {
             switch (d1) {
             case 51: case 106: set_page(PAGE_SOUND, d1); break;  // Device Select (51); 106 too
             case 52: case 107: set_page(PAGE_FX, d1); break;     // Device Lock (52); 107 too
             case 102: shape = shape > 0 ? shape - 1 : kNumShapes - 1; break;  // track <
             case 103: shape = shape < kNumShapes - 1 ? shape + 1 : 0; break;  // track >
-            case 104: pad_bank = 0; break;
-            case 105: pad_bank = 1; break;
             case 74: dice(); break;                 // Capture MIDI: dice
             case 76: on_tap(); break;               // Click: tap tempo
             case 77: reset_sound(); break;          // Undo: back to the power-on sound
             case 118: cycle = !cycle; break;        // Loop: cycling mod envelope
-            case 75: case 115: case 116: case 117: break;  // free
+            case 75: case 104: case 105: case 115: case 116: case 117: break;  // free
             default: unmapped(ch, d1, d2);
             }
         }
     }
 
-    // Once per control tick: advance the LFO, then publish to the bus.
+    // Once per control tick: advance the LFOs, then publish to the bus.
     void tick() {
         ticks++;
         Bus &b = bus();
         const uint8_t *s = knob[PAGE_SOUND], *x = knob[PAGE_FX];
         const float amt = clampf(unit(s[K_LFOAMT]) + modwheel, 0.0f, 1.0f);
         const float l = amt * lfo.tick(lfo_hz, lfo_wave);
+        vib_phase += kVibratoHz / kControlRate;
+        if (vib_phase >= 1.0f) vib_phase -= 1.0f;
+        const float *pf = perf;
+        const float vib = 0.7f * pf[PERF_VIBRATO] * fast_sin(2.0f * kPi * vib_phase);  // up to +-0.7 st
 
         b.shape = shape;
-        b.timbre = clampf(unit(s[K_TIMBRE]) + (lfo_target == LFO_TIMBRE ? 0.5f * l : 0.0f), 0.0f, 1.0f);
-        b.color = clampf(unit(s[K_COLOR]) + (lfo_target == LFO_COLOR ? 0.5f * l : 0.0f), 0.0f, 1.0f);
-        b.cutoff_oct = 10.0f * unit(s[K_CUTOFF]) + (lfo_target == LFO_CUTOFF ? 3.0f * l : 0.0f);
+        b.spice = unit(s[K_SPICE]);
+        b.timbre = clampf(unit(s[K_TIMBRE]) + (lfo_target == LFO_TIMBRE ? 0.5f * l : 0.0f) + 0.5f * pf[PERF_TIMBRE], 0.0f, 1.0f);
+        b.color = clampf(unit(s[K_COLOR]) + (lfo_target == LFO_COLOR ? 0.5f * l : 0.0f) + 0.5f * pf[PERF_COLOR], 0.0f, 1.0f);
+        b.cutoff_oct = 10.0f * unit(s[K_CUTOFF]) + (lfo_target == LFO_CUTOFF ? 3.0f * l : 0.0f) + 4.0f * pf[PERF_SWEEP];
         b.q = 0.5f * fast_exp2(5.32192809f * unit(s[K_RESO]));  // 0.5 * 40^v: 0.5 .. 20
         b.env_amt_oct = 5.0f * clampf(((float)s[K_ENVAMT] - 64.0f) / 63.0f, -1.0f, 1.0f);
         b.fmode = fmode;
@@ -428,14 +451,20 @@ struct Launchkey {
         b.amp_s = unit(fader[F_AS]);     b.amp_r = env_time(fader[F_AR]);
         b.mod_a = env_time(fader[F_MA]); b.mod_d = env_time(fader[F_MD]);
         b.mod_s = unit(fader[F_MS]);     b.mod_r = env_time(fader[F_MR]);
-        b.pitch_mod = 2.0f * bend + (lfo_target == LFO_PITCH ? 2.0f * l : 0.0f);
+        b.pitch_mod = 2.0f * bend + (lfo_target == LFO_PITCH ? 2.0f * l : 0.0f)
+                    - 12.0f * pf[PERF_DIVE] + (pf[PERF_OCTAVE] > 0.0f ? 12.0f : 0.0f) + vib;
         b.glide = glide;
         b.glide_t = unit(x[K_GLIDE]) * unit(x[K_GLIDE]);  // 0 .. 1 s, finer at the short end
-        b.delay_on = delay_on;
+        // Delay throw: while held, the delay takes input even when switched
+        // off, with more feedback and wet; on release the echoes ring out.
+        const float th = pf[PERF_THROW];
+        b.delay_on = delay_on || th > 0.0f;
         b.delay_t = 0.01f * fast_exp2(7.22881869f * unit(x[K_DTIME]));  // 10 ms .. 1.5 s (log2 150)
-        b.delay_fb = 0.95f * unit(x[K_DFB]);
-        b.delay_mix = unit(x[K_DMIX]);
-        b.rev_amount = unit(x[K_RAMOUNT]); b.rev_time = unit(x[K_RTIME]);
+        b.delay_fb = clampf(0.95f * unit(x[K_DFB]) + 0.4f * th, 0.0f, 0.95f);
+        b.delay_mix = th > 0.0f ? clampf(unit(x[K_DMIX]) + 0.6f * th, 0.0f, 1.0f) : unit(x[K_DMIX]);
+        const float sw = pf[PERF_SWELL];
+        b.rev_amount = clampf(unit(x[K_RAMOUNT]) + 0.7f * sw, 0.0f, 1.0f);
+        b.rev_time = clampf(unit(x[K_RTIME]) + 0.3f * sw, 0.0f, 1.0f);
         b.rev_diff = unit(x[K_RDIFF]);     b.rev_lp = unit(x[K_RLP]);
         const float m = unit(fader[F_MASTER]);
         b.master = m * m;

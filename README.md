@@ -70,7 +70,7 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
 | 1 Braids voice | 2.5–8.5 %, depending on shape (worst: harmonics) | 25 KB |
 | 3 Braids voices, worst shape | 23 % | 25.8 KB, code shared |
 | `freak_v0` (3 voices + Elements reverb) | 33 % | 31 KB |
-| `freak_v1` (3 voices with filter and envelopes + delay + reverb) | 57 % | 40.2 KB (89 %, Braids at -Os) |
+| `freak_v1` (3 voices with filter and envelopes + delay + reverb) | 58.5 % | 42.9 KB (95 %, Braids at -Os) |
 | Elements reverb / diffuser / string / tube | 19.5 / 7.5 / 5 / 4.5 % | ~0 (code in firmware) |
 | Warps | 46 % | ~0 |
 | Clouds | 79–103 % | ~0, too heavy next to voices |

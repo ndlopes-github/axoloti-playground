@@ -34,6 +34,17 @@ struct Voice {
     float prev_gain;
     bool delay_ok;  // the delay lines are 16 KB contiguous (braids_init.h)
     float saw_phase;
+    // SPICE: per-note random offsets in [-1, 1], drawn at each new note and
+    // scaled live by the SPICE knob (bus().spice).
+    uint32_t rng;
+    float sp_pitch, sp_timbre, sp_color, sp_cut;
+
+    float rnd_unit() {  // xorshift32, uniform in [-1, 1)
+        rng ^= rng << 13;
+        rng ^= rng >> 17;
+        rng ^= rng << 5;
+        return (float)(rng >> 8) * (2.0f / 16777216.0f) - 1.0f;
+    }
 
     // Comb (shape 2) filters its buffer in place. Braids feeds it its analog
     // saw (MacroOscillator::RenderSawComb), so here a PolyBLEP saw fills the
@@ -60,6 +71,9 @@ struct Voice {
         osc = new (osc_mem) braids::DigitalOscillator();
         delay_ok = init_braids(osc);
         saw_phase = 0.0f;
+        rng = 0x9E3779B9u ^ (uint32_t)(uintptr_t)this;  // each voice its own sequence
+        if (rng == 0) rng = 1;
+        sp_pitch = sp_timbre = sp_color = sp_cut = 0.0f;
         amp.init();
         mod.init();
         svf.init();
@@ -73,7 +87,15 @@ struct Voice {
     // nominally within [-1, 1] (soft-clipped, scaled for 3 voices)
     void render(float note, bool gate, float vel, float *out) {
         const Bus &b = bus();
-        const float semis = glide.tick(note, b.glide ? b.glide_t : 0.0f) + b.pitch_mod;
+        const bool strike = gate && !prev_gate;
+        if (strike) {  // SPICE: new random offsets for this note
+            sp_pitch = rnd_unit();
+            sp_timbre = rnd_unit();
+            sp_color = rnd_unit();
+            sp_cut = rnd_unit();
+        }
+        const float sp = b.spice;  // up to +-0.5 st, +-0.3 timbre/color, +-1.5 oct cutoff
+        const float semis = glide.tick(note, b.glide ? b.glide_t : 0.0f) + b.pitch_mod + 0.5f * sp * sp_pitch;
         // Braids: MIDI note << 7, with tables for 96 kHz, so + 12 semitones at 48 kHz.
         const int32_t p = (int32_t)((semis + 12.0f) * 128.0f);
         osc->set_pitch((int16_t)(p < 0 ? 0 : (p > 32767 ? 32767 : p)));
@@ -81,19 +103,20 @@ struct Voice {
         const float menv = mod.tick(gate, b.mod_a, b.mod_d, b.mod_s, b.mod_r, b.cycle);
         const float aenv = amp.tick(gate, b.amp_a, b.amp_d, b.amp_s, b.amp_r, false);
 
-        const float timbre = clampf(b.timbre + (b.modtimbre ? 0.5f * menv : 0.0f), 0.0f, 1.0f);
+        const float timbre = clampf(b.timbre + (b.modtimbre ? 0.5f * menv : 0.0f) + 0.3f * sp * sp_timbre, 0.0f, 1.0f);
+        const float color = clampf(b.color + 0.3f * sp * sp_color, 0.0f, 1.0f);
         const int shape = (b.shape == kShapeComb && !delay_ok) ? kShapeComb + 1 : b.shape;
         osc->set_shape((braids::DigitalOscillatorShape)shape);
-        osc->set_parameters((int16_t)(timbre * 32767.0f), (int16_t)(b.color * 32767.0f));
-        if (gate && !prev_gate) osc->Strike();
+        osc->set_parameters((int16_t)(timbre * 32767.0f), (int16_t)(color * 32767.0f));
+        if (strike) osc->Strike();
         prev_gate = gate;
         if (shape == kShapeComb) render_saw(semis);
         osc->Render(sync, buf, kBlock);
 
         // Cutoff in octaves above 20 Hz: knob, key tracking (note 60 = no
-        // offset), mod envelope, velocity.
+        // offset), mod envelope, velocity, SPICE.
         const float oct = b.cutoff_oct + (b.keytrack ? (note - 60.0f) / 12.0f : 0.0f) +
-                          b.env_amt_oct * menv + (b.velcut ? 2.0f * vel : 0.0f);
+                          b.env_amt_oct * menv + (b.velcut ? 2.0f * vel : 0.0f) + 1.5f * sp * sp_cut;
         svf.set(20.0f * fast_exp2(oct), b.q);
 
         // Gain: envelope x velocity (soft notes keep a quarter), / 4 headroom

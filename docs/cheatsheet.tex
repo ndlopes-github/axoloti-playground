@@ -61,7 +61,7 @@
 {\fontsize{16}{18}\selectfont\bfseries freak}\hspace{3mm}%
 {\fontsize{9.5}{11}\selectfont Axoloti Core + Launchkey 49 MK3 (standalone mode) \textperiodcentered{}
 3-voice Braids synth \textperiodcentered{} patch \texttt{patches/freak/freak\_v1.axp}}\hfill
-{\fontsize{7}{8}\selectfont\color{black!55} v1.1 \textperiodcentered{} 2026-11-04 \textperiodcentered{} page 1 of 2 \textperiodcentered{} github.com/ndlopes-github/axoloti-playground}
+{\fontsize{7}{8}\selectfont\color{black!55} v1.2 \textperiodcentered{} 2026-11-05 \textperiodcentered{} page 1 of 2 \textperiodcentered{} github.com/ndlopes-github/axoloti-playground}
 
 \vspace{1.5mm}
 \begin{tikzpicture}[x=1mm,y=1mm]
@@ -81,7 +81,7 @@
   % ---- knobs: SOUND page (black, top) / FX page (blue, below)
   \node[font=\fontsize{5}{6}\selectfont, text=black!55, anchor=west] at (36,74) {KNOBS \quad
      \textbf{\textcolor{snd}{SOUND page}} above \quad \textcolor{fxc}{FX page} below};
-  \knob{42}{SHAPE}{\FX{GLIDE}}
+  \knob{42}{SPICE}{\FX{GLIDE}}
   \knob{55.2}{TIMBRE}{\FX{DLY TIME}}
   \knob{68.4}{COLOR}{\FX{DLY FDBK}}
   \knob{81.6}{\textcolor{fltc}{CUTOFF}}{\FX{DLY MIX}}
@@ -93,15 +93,15 @@
   \btn{148}{58.5}{\textbf{\FX{FX}} page\\[-0.4mm]\cc{Device Lock}}{fxc}{12}
 
   % ---- pads (bank 1 shown) + side buttons
-  \pad{0}{1}{0 ring\\mod}  \pad{1}{1}{1 saw\\swarm} \pad{2}{1}{2 comb}    \pad{3}{1}{3 toy}
-  \pad{4}{1}{4 filter\\LP} \pad{5}{1}{5 filter\\peak} \pad{6}{1}{6 filter\\BP} \pad{7}{1}{7 filter\\HP}
-  \pad{0}{0}{8 VOSIM}      \pad{1}{0}{9 vowel}    \pad{2}{0}{10 vowel\\FOF} \pad{3}{0}{11 harmo-\\nics}
-  \pad{4}{0}{12 FM}        \pad{5}{0}{13 fdbk\\FM}  \pad{6}{0}{14 chaotic\\FM} \pad{7}{0}{15 plucked}
-  \node[font=\fontsize{5}{6}\selectfont, text=black!55, anchor=west] at (36,19) {PADS = SHAPES (bank 1 shown; bank 2 = +16, table below)};
+  \pad{0}{1}{0 init}  \pad{1}{1}{1 vowel\\pad} \pad{2}{1}{2 FM\\bass}    \pad{3}{1}{3 glass\\mallets}
+  \pad{4}{1}{4 chord\\stabs} \pad{5}{1}{5 granular\\weather} \pad{6}{1}{6 pitched\\rain} \pad{7}{1}{7 chaotic\\drone}
+  \pad{0}{0}{\textcolor{fltc}{SWEEP}\\cutoff\,+} \pad{1}{0}{DIVE\\pitch\,\(-\)}    \pad{2}{0}{VIBRATO} \pad{3}{0}{OCTAVE\\up}
+  \pad{4}{0}{\FX{THROW}\\delay} \pad{5}{0}{\FX{SWELL}\\reverb}  \pad{6}{0}{TIMBRE\\push} \pad{7}{0}{COLOR\\push}
+  \node[font=\fontsize{5}{6}\selectfont, text=black!55, anchor=west] at (36,19) {PADS: top = PRESETS 0--7 \quad bottom = PERFORMANCE, only while held, harder = more};
   \draw[fill=padc!30!white, draw=padc!80!black] (147,40.2) circle (3.1);
   \draw[fill=padc!30!white, draw=padc!80!black] (147,27.8) circle (3.1);
-  \node[font=\fontsize{4.9}{5.4}\selectfont, align=center] at (147,40.2) {BANK\\[-0.8mm]1};
-  \node[font=\fontsize{4.9}{5.4}\selectfont, align=center] at (147,27.8) {BANK\\[-0.8mm]2};
+  \node[font=\fontsize{4.9}{5.4}\selectfont, align=center, text=freec!80!black] at (147,40.2) {free};
+  \node[font=\fontsize{4.9}{5.4}\selectfont, align=center, text=freec!80!black] at (147,27.8) {free};
 
   % ---- faders
   \node[font=\fontsize{5}{6}\selectfont, text=black!55, anchor=west] at (160,74) {FADERS \quad
@@ -139,7 +139,7 @@
 \begin{minipage}[t]{70mm}\vspace{0pt}
 \begin{card}{Knobs: two pages, scaled pickup}
 \begin{tabularx}{\linewidth}{@{}l L@{}}
-\textbf{SHAPE} & 34 Braids shapes in turn (3--4 steps each) \\
+\textbf{SPICE} & per-note randomness: each note gets its own pitch (\(\pm\)0.5 st), timbre, color (\(\pm\)0.3) and cutoff (\(\pm\)1.5 oct) offset; 0 = every note alike \\
 \textbf{TIMBRE / COLOR} & the two Braids parameters (meaning depends on the shape) \\
 \textbf{\textcolor{fltc}{CUTOFF}} & 20 Hz \(\cdot 2^{10k}\): 20 Hz -- 20 kHz \\
 \textbf{\textcolor{fltc}{RESO}} & Q = 0.5 -- 20 (exponential) \\
@@ -176,26 +176,26 @@ TAP LFO: two taps 0.1--4 s apart set the period; LFO RATE takes over again when 
 \end{card}
 \end{minipage}\hfill
 \begin{minipage}[t]{66mm}\vspace{0pt}
-\begin{card}{Pads: shapes, two banks}
-\fontsize{6.4}{7.4}\selectfont
-\begin{tabularx}{\linewidth}{@{}L L@{}}
-\textbf{Bank 1} (0--15) & \textbf{Bank 2} (16--31) \\
-0 ring mod \quad 1 saw swarm & 16 bowed \quad 17 blown \\
-2 comb \quad 3 toy & 18 fluted \quad 19 bell \\
-4--7 filter LP/peak/BP/HP & 20 drum \quad 21 kick \\
-8 VOSIM \quad 9 vowel & 22 cymbal \quad 23 snare \\
-10 vowel FOF \quad 11 harmonics & 24 wavetables \quad 25 wave map \\
-12 FM \quad 13 feedback FM & 26 wave line \quad 27 paraphonic \\
-14 chaotic FM \quad 15 plucked & 28 filtered noise \quad 29 twin peaks \\
- & 30 clocked noise \quad 31 granular \\
+\begin{card}{Shape and pads}
+\textbf{Shape}: only \textbf{Track \(\blacktriangleleft\)\,/\,\(\blacktriangleright\)}, one step per press,
+wrapping 33\(\to\)0 (list on page 2). Strike-type shapes (plucked, bell, drums) are struck on each key press.\\[0.5mm]
+\textbf{Top pads} = presets 0--7, recalled on the strike (page 2).\\[0.5mm]
+\textbf{Bottom pads} = performance: only while held; the strike velocity sets the amount, then the pad's
+pressure.
+\fontsize{6.6}{7.9}\selectfont
+\begin{tabularx}{\linewidth}{@{}l L@{}}
+SWEEP & cutoff up to +4 oct \\
+DIVE & pitch down to \(-\)12 st \\
+VIBRATO & 6 Hz, up to \(\pm\)0.7 st \\
+OCTAVE & +12 st (on/off) \\
+THROW & delay takes input even when off, +feedback, +wet; echoes ring out on release \\
+SWELL & reverb amount +0.7, time +0.3 \\
+TIMBRE / COLOR & +0.5 \\
 \end{tabularx}
-Top row = first 8, bottom row = next 8. 32 particle noise and 33 digital modulation:
-\(\blacktriangleright\) from 31, or the SHAPE knob. Strike-type shapes (plucked, bell, drums)
-are struck on each key press.
 \end{card}
 \begin{card}{Notes}
-3 voices (a 4th note takes the oldest voice). \textbf{NEXT PRESET} (fader button 9) steps through
-8 presets (page 2); \textbf{RESET} (Undo) is preset 0, the power-on sound; \textbf{DICE} (Capture MIDI)
+3 voices (a 4th note takes the oldest voice). Presets: a top pad, or \textbf{NEXT PRESET} (fader button 9)
+to step through them; \textbf{RESET} (Undo) is preset 0, the power-on sound; \textbf{DICE} (Capture MIDI)
 rolls a random SOUND page and keeps envelope, FX and volume. Controls left behind by a preset or a roll
 pick up smoothly. Toggle states are \textbf{not shown} yet (no LEDs in standalone mode).
 \end{card}
@@ -213,7 +213,7 @@ minor/major pentatonic.\\
 \begin{card}{Signal path and load}
 3 \(\times\) (Braids \(\to\) SVF \(\to\) amp env \(\times\) velocity) \(\to\) delay \(\to\)
 Elements reverb \(\to\) VOL. Velocity: soft notes keep \(\frac14\) of the level.
-DSP 57\,\%, patch RAM 40 of 44 KB (Axoloti Core, Ksoloti 1.1.0).
+DSP 58.5\,\%, patch RAM 43 of 44 KB (Axoloti Core, Ksoloti 1.1.0).
 \end{card}
 \begin{card}{Standalone: no laptop}
 \textbf{Save}: in the patch window, \emph{Upload to Internal Flash as Startup}, and also
@@ -230,16 +230,16 @@ skips the startup patch (S2 is inside the box).
 \newpage
 {\fontsize{16}{18}\selectfont\bfseries freak}\hspace{3mm}%
 {\fontsize{9.5}{11}\selectfont shapes, dial values, presets, troubleshooting}\hfill
-{\fontsize{7}{8}\selectfont\color{black!55} v1.1 \textperiodcentered{} page 2 of 2}
+{\fontsize{7}{8}\selectfont\color{black!55} v1.2 \textperiodcentered{} page 2 of 2}
 
 \vspace{1.5mm}
-\newcommand{\sh}[5]{#1 & \textcolor{black!55}{#2} & \textbf{#3} & #4 & #5 \\}
+\newcommand{\sh}[5]{#1 & \textbf{#3} & #4 & #5 \\}
 \begin{minipage}[t]{166mm}\vspace{0pt}
 \begin{card}{The 34 shapes: what TIMBRE (knob 2) and COLOR (knob 3) do \quad\textmd{\fontsize{6.5}{7}\selectfont (after the Braids manual)}}
 \fontsize{6.9}{8.3}\selectfont
 \setlength{\tabcolsep}{2.4pt}
-\begin{tabular}[t]{@{}r l l l l@{}}
-\# & pad & shape & TIMBRE & COLOR \\ \hline
+\begin{tabular}[t]{@{}r l l l@{}}
+\# & shape & TIMBRE & COLOR \\ \hline
 \sh{0}{1·T1}{ring mod}{tuning of sines 2, 3}{tuning of sines 2, 3}
 \sh{1}{1·T2}{saw swarm}{detune (7 saws)}{high-pass}
 \sh{2}{1·T3}{comb}{comb pitch}{feedback \(-\)\,/\,0\,/\,+ (L\,/\,noon\,/\,R)}
@@ -258,8 +258,8 @@ skips the startup patch (S2 is inside the box).
 \sh{15}{1·B8}{plucked}{damping}{pluck position}
 \sh{16}{2·T1}{bowed}{friction}{bow position}
 \end{tabular}\hfill
-\begin{tabular}[t]{@{}r l l l l@{}}
-\# & pad & shape & TIMBRE & COLOR \\ \hline
+\begin{tabular}[t]{@{}r l l l@{}}
+\# & shape & TIMBRE & COLOR \\ \hline
 \sh{17}{2·T2}{blown}{air pressure}{geometry}
 \sh{18}{2·T3}{fluted}{air pressure}{geometry}
 \sh{19}{2·T4}{bell}{damping}{inharmonicity}
@@ -278,12 +278,12 @@ skips the startup patch (S2 is inside the box).
 \sh{32}{\(\blacktriangleright\)}{particles}{density}{pitch randomness}
 \sh{33}{\(\blacktriangleright\)}{digital mod}{bit rate}{data byte}
 \end{tabular}\\[0.6mm]
-pad = bank\(\cdot\)row+column: 1\(\cdot\)T1 is bank 1, top row, first pad (BANK 1/2 = the round buttons right of the pads).
+Select with Track \(\blacktriangleleft\)\,/\,\(\blacktriangleright\) (one step per press, wrapping).
 Plucked, bowed, bell, drum, kick, cymbal and snare are struck on each new key: S and R shape the tail only.
 Time constants inside Braids that do not follow pitch (grain rates, built-in decays) run at half the original speed.
 \end{card}
 
-\begin{card}{Presets: NEXT PRESET (fader button 9) steps 0\(\to\)7\(\to\)0, RESET (Undo) = 0 \quad\textmd{\fontsize{6.5}{7}\selectfont (chosen from the parameter meanings, not yet tuned by ear)}}
+\begin{card}{Presets: top pads 1--8 = presets 0--7; NEXT PRESET (fader button 9) steps 0\(\to\)7\(\to\)0; RESET (Undo) = 0 \quad\textmd{\fontsize{6.5}{7}\selectfont (chosen from the parameter meanings, not yet tuned by ear)}}
 \fontsize{7.2}{8.7}\selectfont
 \begin{tabularx}{\linewidth}{@{}>{\bfseries}l L@{}}
 0 init & saw swarm, LP, key tracking; delay off. The power-on sound. \\
@@ -327,7 +327,8 @@ Times are exponential: each quarter of the travel is a factor of 10. S, TIMBRE, 
 A struck shape (pluck, bell, drums) only sounds on a new key. Is the patch running (Live / startup)?\\[0.4mm]
 \textbf{Knobs do nothing}: on the FX page? Press Device Select.
 FX knobs 1--4 need GLIDE / DELAY on.\\[0.4mm]
-\textbf{Wobbles or detunes}: LFO AMT (knob 8) or the mod wheel; TARGET may be on pitch.\\[0.4mm]
+\textbf{Wobbles or detunes}: LFO AMT (knob 8) or the mod wheel; TARGET may be on pitch; SPICE (knob 1) detunes each note.\\[0.4mm]
+\textbf{The sound changes only while a pad is held}: that is a bottom (performance) pad.\\[0.4mm]
 \textbf{A note drops out}: 3 voices; a 4th note takes the oldest.\\[0.4mm]
 \textbf{Echoes pile up}: lower DLY FDBK or switch DELAY off (the tail dies away).\\[0.4mm]
 \textbf{Lost}: RESET (Undo) restores the power-on sound.\\[0.4mm]
@@ -342,11 +343,11 @@ keys, bend, mod wheel & ch 1: notes 36--84, pitch bend, CC 1 \\
 knobs 1--8 & ch 1 CC 21--28 \\
 faders 1--9 & ch 1 CC 71--79 \\
 fader buttons 1--9 & ch 1 CC 11--19 (127 press, 0 release) \\
-pads & ch 10 notes 36--51 \\
+pads & ch 10 notes 36--51 + poly pressure \\
 Device Select / Device Lock (pages) & ch 16 CC 51/52 (observed) \\
 track \(\blacktriangleleft\)/\(\blacktriangleright\) & ch 16 CC 102/103 \\
 buttons left of the pads & ch 16 CC 106/107, also switch pages \\
-round buttons, Capture, Click, Undo, Loop & ch 16 CC 104/105, 74, 76, 77, 118 \\
+Capture, Click, Undo, Loop & ch 16 CC 74, 76, 77, 118 \\
 \end{tabular}\\[0.4mm]
 Recorded from this unit (\texttt{docs/launchkey49mk3\_map.md}).
 \end{card}

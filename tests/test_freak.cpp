@@ -185,27 +185,14 @@ static void test_launchkey() {
     CHECK(std::fabs(b.master - (100.0f / 127) * (100.0f / 127)) < 1e-6f, "init master %g", b.master);
     CHECK(std::fabs(b.amp_a - 0.001f * std::pow(10.0f, 4.0f * 10 / 127)) < 1e-5f, "attack time %g", b.amp_a);
 
-    // knob 1 sweeps every shape, monotonically
-    int last = -1, seen = 0;
-    for (int v = 0; v <= 127; v++) {
-        cc(k, 1, 21, v);
-        CHECK(k.shape >= last, "shape not monotone at %d", v);
-        if (k.shape != last) seen++;
-        last = k.shape;
-    }
-    CHECK(seen == kNumShapes && last == kNumShapes - 1, "knob 1 reached %d shapes, last %d", seen, last);
+    // knob 1 is SPICE: it does not touch the shape
+    const int shape0 = k.shape;
+    for (int v = 0; v <= 127; v++) cc(k, 1, 21, v);
+    k.tick();
+    CHECK(k.shape == shape0 && std::fabs(b.spice - 1.0f) < 1e-6f, "knob 1 = spice (shape %d, spice %g)", k.shape, b.spice);
 
-    // pads and banks
-    k.midi(0x99, 40, 100); CHECK(k.shape == 0, "pad top-left -> %d", k.shape);
-    k.midi(0x99, 51, 100); CHECK(k.shape == 7, "pad top-right -> %d", k.shape);
-    k.midi(0x99, 36, 100); CHECK(k.shape == 8, "pad bottom-left -> %d", k.shape);
-    k.midi(0x99, 47, 100); CHECK(k.shape == 15, "pad bottom-right -> %d", k.shape);
-    cc(k, 16, 105, 127);
-    k.midi(0x99, 40, 100); CHECK(k.shape == 16, "bank 2 pad top-left -> %d", k.shape);
-    k.midi(0x99, 47, 100); CHECK(k.shape == 31, "bank 2 pad bottom-right -> %d", k.shape);
-    k.midi(0x99, 40, 0);   CHECK(k.shape == 31, "pad release must not change the shape");
-
-    // track < > step and wrap
+    // track < > is the only shape control: step and wrap
+    k.shape = 31;
     cc(k, 16, 103, 127); CHECK(k.shape == 32, "track > -> %d", k.shape);
     cc(k, 16, 103, 127); cc(k, 16, 103, 127); CHECK(k.shape == 0, "track > wraps -> %d", k.shape);
     cc(k, 16, 102, 127); CHECK(k.shape == 33, "track < wraps -> %d", k.shape);
@@ -315,9 +302,6 @@ static void test_presets() {
     same = same && p0.knob[PAGE_FX][0] == kKnobInit[PAGE_FX][0];
     for (int f = 0; f < 8; f++) same = same && p0.fader[f] == kFaderInit[f];
     CHECK(same, "preset 0 differs from the power-on values");
-    // shape <-> knob 1 value round trip
-    for (int s = 0; s < kNumShapes; s++)
-        CHECK(((shape_knob(s) * kNumShapes) >> 7) == s && shape_knob(s) <= 127, "shape_knob(%d)", s);
 
     Launchkey k;
     k.init();
@@ -349,7 +333,7 @@ static void test_dice() {
         for (int t = 0; t < 7 + roll; t++) k.tick();
         cc(k, 16, 74, 127);
         const uint8_t *s = k.knob[PAGE_SOUND];
-        CHECK(k.shape >= 0 && k.shape < kNumShapes && ((s[K_SHAPE] * kNumShapes) >> 7) == k.shape, "dice shape %d", k.shape);
+        CHECK(k.shape >= 0 && k.shape < kNumShapes && s[K_SPICE] <= 50, "dice shape %d, spice %d", k.shape, s[K_SPICE]);
         CHECK(s[K_CUTOFF] >= 50 && s[K_CUTOFF] <= 120 && s[K_RESO] <= 80 && s[K_LFOAMT] <= 50, "dice ranges");
         CHECK(k.fmode >= 0 && k.fmode < 3 && k.lfo_wave < kNumLfoWaves && k.lfo_target < NUM_LFO_TARGETS, "dice toggles");
         if (!seen[k.shape]) { seen[k.shape] = true; shapes_seen++; }
@@ -359,6 +343,59 @@ static void test_dice() {
     for (int f = 0; f < 4; f++) kept = kept && k.fader[f] == amp[f];
     CHECK(kept && k.fader[F_MASTER] == kFaderInit[F_MASTER], "dice must not touch FX, amp envelope, volume");
     CHECK(shapes_seen >= 25, "200 rolls reached only %d of 34 shapes", shapes_seen);
+}
+
+// Pads: top row = presets (on the strike), bottom row = performance pads that
+// act only while held, by velocity and then pressure.
+static void test_pads() {
+    Launchkey k;
+    k.init();
+    const Bus &b = bus();
+    k.midi(0x99, 41, 90); CHECK(k.preset == 1 && k.shape == kPresets[1].shape, "top pad 2 -> preset 1");
+    k.midi(0x99, 51, 90); CHECK(k.preset == 7, "top pad 8 -> preset 7");
+    k.midi(0x99, 51, 0);  CHECK(k.preset == 7, "top pad release changes nothing");
+    k.midi(0xA9, 51, 80); CHECK(k.preset == 7, "top pad pressure changes nothing");
+    k.midi(0x99, 40, 90); CHECK(k.preset == 0 && k.shape == kInitShape, "top pad 1 -> preset 0");
+    k.tick();
+    const float cut0 = b.cutoff_oct, pitch0 = b.pitch_mod, tim0 = b.timbre, col0 = b.color;
+    const float rev0 = b.rev_amount;
+    CHECK(!b.delay_on, "delay off at power-on");
+
+    k.midi(0x99, 36, 127); k.tick();  // bottom pad 1: filter sweep, full
+    CHECK(std::fabs(b.cutoff_oct - (cut0 + 4.0f)) < 1e-5f, "sweep +4 oct (%g)", b.cutoff_oct - cut0);
+    k.midi(0xA9, 36, 64); k.tick();   // pressure halves it
+    CHECK(std::fabs(b.cutoff_oct - (cut0 + 4.0f * 64 / 127)) < 1e-5f, "sweep follows pressure");
+    k.midi(0x99, 36, 0); k.tick();    // release
+    CHECK(std::fabs(b.cutoff_oct - cut0) < 1e-6f, "release ends the sweep");
+
+    k.midi(0x99, 37, 127); k.tick();
+    CHECK(std::fabs(b.pitch_mod - (pitch0 - 12.0f)) < 1e-5f, "dive -12 st (%g)", b.pitch_mod);
+    k.midi(0x89, 37, 0); k.tick();    // note off also releases
+    CHECK(std::fabs(b.pitch_mod - pitch0) < 1e-6f, "note off ends the dive");
+
+    k.midi(0x99, 38, 127);            // vibrato: +-0.7 st at 6 Hz
+    float lo = 1e9f, hi = -1e9f;
+    for (int t = 0; t < 3000; t++) { k.tick(); lo = std::fmin(lo, b.pitch_mod); hi = std::fmax(hi, b.pitch_mod); }
+    CHECK(hi - pitch0 > 0.65f && hi - pitch0 <= 0.7f + 1e-4f && pitch0 - lo > 0.65f, "vibrato depth %g..%g", lo, hi);
+    k.midi(0x99, 38, 0);
+
+    k.midi(0x99, 39, 10); k.tick();
+    CHECK(std::fabs(b.pitch_mod - (pitch0 + 12.0f)) < 1e-5f, "octave up while held, at any pressure");
+    k.midi(0x99, 39, 0);
+
+    k.midi(0x99, 44, 127); k.tick();
+    CHECK(b.delay_on && b.delay_fb > 0.3f && b.delay_mix >= 0.6f, "throw opens the delay (fb %g mix %g)", b.delay_fb, b.delay_mix);
+    k.midi(0x99, 44, 0); k.tick();
+    CHECK(!b.delay_on, "release: the delay takes no more input");
+
+    k.midi(0x99, 45, 127); k.tick();
+    CHECK(b.rev_amount > rev0 + 0.6f || b.rev_amount == 1.0f, "swell raises the reverb");
+    k.midi(0x99, 45, 0);
+    k.midi(0x99, 46, 127); k.midi(0x99, 47, 127); k.tick();
+    CHECK(b.timbre >= tim0 + 0.49f || b.timbre == 1.0f, "timbre push");
+    CHECK(b.color >= col0 + 0.49f || b.color == 1.0f, "color push");
+    k.midi(0x99, 46, 0); k.midi(0x99, 47, 0); k.tick();
+    CHECK(std::fabs(b.timbre - tim0) < 1e-6f && std::fabs(b.color - col0) < 1e-6f, "pushes end on release");
 }
 
 // Exhaustive check of the scaled-pickup map for every anchor (a, s).
@@ -406,6 +443,7 @@ int main() {
     test_pages();
     test_presets();
     test_dice();
+    test_pads();
     if (failures) {
         std::printf("%d check(s) failed\n", failures);
         return 1;
