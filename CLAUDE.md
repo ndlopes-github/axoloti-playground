@@ -97,9 +97,10 @@ measurements.
 
 ## Open items
 
-- SD card (inserted, not yet inspected; Nuno allowed formatting it). It may
-  hold an old `/start.bin`. Reach it via *Board → Enter Card Reader Mode*,
-  since the laptop has no SD reader. It is needed for a power-on startup patch.
+- SD card: holds grains (`/start.bin`, `/grains/01..08.wav`). Standalone boot
+  from the card was confirmed by Nuno on 2026-11-05. Reach the card via *Board →
+  Enter Card Reader Mode*, since the laptop has no SD reader.
+- grains presets are set from the parameter meanings and not yet tuned by ear.
 - Next sound work: multimode filter, cycling envelope, LFO → timbre on the mod
   wheel, pitch bend, pad LEDs through the DAW port.
 - Plaits port (speech, modal and chord engines): ≈36 KB code + 12 KB tables
