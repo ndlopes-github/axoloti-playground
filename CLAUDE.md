@@ -80,6 +80,21 @@ measurements.
 - SRAM1 is at 95 % (42.9 of 44 KB) with freak v1 (after SPICE and the performance pads); the next addition needs code moved to SRAM3. Braids is compiled at -Os by a pragma in third_party/braids/digital_oscillator.cc (17 KB instead of 24 KB; about +1 % DSP per voice). The next code growth has to
   go to SRAM3 (`__attribute__((section(".sram3")))`), or Braids has to shrink.
 
+- grains (SD-card patch): the engine costs **1.76 % DSP per live grain** on the
+  board. The cost is mostly compute, not SDRAM: a CCM-resident source saved only
+  0.2 % per grain. The pool is 20 grains (idle 41 %, full 75.5 %).
+  `GrainsCtl` is compiled at -Os by a pragma in lib/grains_ctl.h; at -O3 it was
+  17 KB of SRAM1.
+- SD file reads from a patch: sector-aligned file offsets and 4-byte-aligned
+  buffers only (`STM32_SDC_SDIO_UNALIGNED_SUPPORT FALSE`). `sdram_malloc`
+  returns the SDRAM base when it is full (check `sdram_get_free()`) and is not
+  thread-safe (the loader waits for the first DSP tick). `-runTest` does not
+  copy `file-depends`; Live in the GUI or Upload to SD Card does. ChibiOS is
+  3.2.1: use `THD_WORKING_AREA`, `chThdShouldTerminateX`, `ST2MS`.
+- Two patches: grains on the SD card (`/start.bin`, plus `/grains/*.wav`),
+  freak in flash. The board boots the SD one when a card is in, so pulling the
+  card always recovers freak.
+
 ## Open items
 
 - SD card (inserted, not yet inspected; Nuno allowed formatting it). It may

@@ -58,6 +58,10 @@ inline float fast_sin(float x) {
     return clampf(s, -1.0f, 1.0f);
 }
 
+// sqrt(x), x >= 0. With -fno-math-errno (the patch flags) this is the FPU's
+// VSQRT instruction, not a libm call.
+inline float fast_sqrt(float x) { return __builtin_sqrtf(x < 0.0f ? 0.0f : x); }
+
 // tan(pi x) for x in (0, 0.5), computed as sin / cos.
 inline float fast_tan_pi(float x) {
     const float t = kPi * x;

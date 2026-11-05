@@ -14,6 +14,16 @@ banks, and transport buttons. See the cheat sheet,
 [`docs/cheatsheet.pdf`](docs/cheatsheet.pdf). `freak_v0.axp` is the first,
 simpler version.
 
+**`patches/grains/grains_v1.axp`** is the second patch, meant for the SD card:
+the board starts it when a card is in, and freak (in flash) when none is. It
+is a mono granular synth after the MicroFreak's grain engines. Up to 20
+grains (SCAN, CLOUD or HIT) play from a source in SDRAM, into a stereo filter
+and amp with the same envelopes, LFO and effects as freak. It keeps freak's
+control layout and adds a GRAIN knob page. Sources are a built-in one plus
+the WAV files in `/grains` on the card. A starter bank of 8, rendered with
+freak's own oscillators, is in `objects/grains_wav/` and is copied to the card
+with the patch. See [`docs/grains_cheatsheet.pdf`](docs/grains_cheatsheet.pdf).
+
 ## Hardware and software
 
 - Axoloti Core (original board), running **Ksoloti Patcher 1.1.0** in Firmware
@@ -48,6 +58,11 @@ simpler version.
 |---|---|
 | `lib/launchkey_ctl.h` | The whole Launchkey mapping: pages, soft takeover, toggles, pads, tap tempo, LFO. It publishes everything on a control bus. Single source of truth for the cheat sheet. |
 | `lib/freak_dsp.h` | Envelopes, TPT state-variable filter, LFO, glide, delay, and fast exp2/sin/tan (no libm). Error bounds are in the comments and checked by the tests. |
+| `lib/grains.h` | The granular engine: a fixed grain pool, 32.32 fixed-point positions, the window, and the fast and careful read loops. Correctness arguments are in the comments. |
+| `lib/grains_ctl.h`, `lib/grains_voice.h` | The grains mapping (mono keys, three knob pages, pads, modes, presets) and its voice. The mapping is the single source of truth for the grains cheat sheet. |
+| `lib/wav.h`, `lib/grains_bank.h`, `lib/grains_loader.h` | WAV parsing and conversion, the source bank with its built-in source, and the board-side loader thread (FatFs, sector-aligned reads). |
+| `objects/grains_*.axo`, `fx_delay_st.axo` | The grains objects (control hub, bank, voice) and a stereo delay. |
+| `tests/test_grains*.cpp`, `tests/render_grains.cpp`, `tests/render_bank.cpp` | Host tests for the engine, loader, controller and voice; a preset renderer; the starter-bank renderer (`make bank`). |
 | `tests/test_freak.cpp` | Host unit tests (`make test`, with ASan/UBSan). |
 | `objects/launchkey_ctl.axo`, `freak_voice.axo`, `fx_delay.axo` | The synth's objects: control hub, one voice, delay. They talk through the control bus, not through wires. |
 | `objects/braids_osc.axo` | Stand-alone Braids digital macro-oscillator, with inlets: pitch, trig (strike), timbre, colour, shape and `shapecv`. |
@@ -71,6 +86,9 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
 | 3 Braids voices, worst shape | 23 % | 25.8 KB, code shared |
 | `freak_v0` (3 voices + Elements reverb) | 33 % | 31 KB |
 | `freak_v1` (3 voices with filter and envelopes + delay + reverb) | 58.5 % | 42.9 KB (95 %, Braids at -Os) |
+| `grains_v1`, idle / all 20 grains (stereo delay + reverb) | 41 % / 75.5 % | 28.2 KB (controller at -Os) |
+| grain engine, per live grain | 1.76 % | |
+| grains bank load from SD (8 files, 3000 KB, background thread) | 1.06 s (2.8 MB/s) | |
 | Elements reverb / diffuser / string / tube | 19.5 / 7.5 / 5 / 4.5 % | ~0 (code in firmware) |
 | Warps | 46 % | ~0 |
 | Clouds | 79–103 % | ~0, too heavy next to voices |
@@ -104,6 +122,15 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
   logs RMS, peak, zero-crossing rate and saturated-sample counts over 0.9 s
   to the patcher log. `patches/dev/chain/` probes every stage of the chain;
   run it with `-runTest`.
+- **Reading files from the SD card in a patch** (grains_loader.h):
+  - The firmware builds the SD driver without unaligned-buffer support. Every
+    read of a sector or more must start at a 512-byte file offset and land in
+    a 4-byte-aligned buffer.
+  - `sdram_malloc` returns the SDRAM *base* when it runs out, not null, so check
+    `sdram_get_free()` first. It is not thread-safe either: a loader thread
+    must wait until every object's init has run.
+  - `-runTest` does not copy an object's `file-depends` to the card. Going Live
+    in the GUI or *Upload to SD Card* does.
 - **Checking the voice on the host:** `make render`, then
   `./tests/render_freak out.wav <shape> <note>` renders the same voice code
   with the real Braids oscillator, under AddressSanitizer, and prints level

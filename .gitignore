@@ -7,7 +7,13 @@ tools/axo_dfu
 tests/run_tests
 tests/render_freak
 *.wav
+# ...except the grains starter bank, which the patch copies to the SD card
+!objects/grains_wav/*.wav
 docs/*.aux
 docs/*.log
 docs/*.fls
 docs/*.fdb_latexmk
+tests/run_grains
+tests/run_grains_ctl
+tests/render_bank
+tests/render_grains

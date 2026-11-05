@@ -1,0 +1,69 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="grains_bank" uuid="af2fe131-7c4a-494f-8c87-c9007e331fb7">
+      <sDescription>Sources for the grains synth. Source 0 is generated at init (a saw chord whose brightness rises along it), so the patch plays without files. Sources 1.. are the WAV files in /grains on the SD card (16, 24 or 32-bit, or float; any rate; stereo is mixed to mono), up to 16, in short-name order, loaded into SDRAM by a background thread while the patch already plays. The starter bank (grains_wav/01..08.wav) goes to /grains when the patch is uploaded to the SD card or goes live with a card inserted. The log reports what loaded. Use one per patch.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <file-depends>
+         <file-depend localFilename="grains_wav/01.wav" targetPath="/grains/01.wav"/>
+         <file-depend localFilename="grains_wav/02.wav" targetPath="/grains/02.wav"/>
+         <file-depend localFilename="grains_wav/03.wav" targetPath="/grains/03.wav"/>
+         <file-depend localFilename="grains_wav/04.wav" targetPath="/grains/04.wav"/>
+         <file-depend localFilename="grains_wav/05.wav" targetPath="/grains/05.wav"/>
+         <file-depend localFilename="grains_wav/06.wav" targetPath="/grains/06.wav"/>
+         <file-depend localFilename="grains_wav/07.wav" targetPath="/grains/07.wav"/>
+         <file-depend localFilename="grains_wav/08.wav" targetPath="/grains/08.wav"/>
+      </file-depends>
+      <includes>
+         <include>../lib/grains_loader.h</include>
+      </includes>
+      <code.declaration><![CDATA[THD_WORKING_AREA(waLoader, 2048);  // FatFs with long names keeps a 512-byte buffer on the stack
+thread_t *thd;
+uint8_t *stage;
+uint32_t ticks;
+bool reported;
+
+// The loader thread: waits for the first DSP tick (after every object's
+// init, so it never races them for the SDRAM allocator), then loads.
+static void loader(void *arg) {
+   freak::Bank &b = freak::bank();
+   while (!b.go) {
+      if (chThdShouldTerminateX()) return;
+      chThdSleepMilliseconds(5);
+   }
+   freak::bank_load_all(b, (uint8_t *)arg);
+}]]></code.declaration>
+      <code.init><![CDATA[const int32_t n = (int32_t)(freak::kFallbackSeconds * freak::kSampleRate);
+int16_t *mem = 0;
+if (sdram_get_free() > n * 2 + 65536) mem = (int16_t *)sdram_malloc(n * sizeof(int16_t));
+freak::bank_init(freak::bank(), mem, n);
+stage = 0;
+if (sdram_get_free() > (int32_t)(freak::kMaxBlockAlign + freak::kStage) + 65536)
+   stage = (uint8_t *)sdram_malloc(freak::kMaxBlockAlign + freak::kStage);
+thd = stage ? chThdCreateStatic(waLoader, sizeof(waLoader), NORMALPRIO, loader, stage) : 0;
+ticks = 0;
+reported = false;]]></code.init>
+      <code.dispose><![CDATA[if (thd) {
+   chThdTerminate(thd);
+   chThdWait(thd);
+   thd = 0;
+}]]></code.dispose>
+      <code.krate><![CDATA[freak::Bank &b = freak::bank();
+b.go = true;
+ticks++;
+if (!reported && b.state == freak::BANK_DONE && (ticks & 63) == 32) {
+   reported = true;
+   if (b.status == freak::BANK_NO_CARD)
+      LogTextMessage("grains: no SD card, built-in source only");
+   else if (b.status == freak::BANK_NO_DIR)
+      LogTextMessage("grains: no /grains folder on the card, built-in source only");
+   else
+      LogTextMessage("grains: %d of %d files loaded (%u KB) in %u ms, %d failed, SDRAM free %d KB",
+                     b.count - 1, b.found, b.bytes >> 10, b.ms, b.failed, sdram_get_free() >> 10);
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

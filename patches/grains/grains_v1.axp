@@ -1,0 +1,82 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="grains_ctl" name="ctl" x="14" y="14">
+      <params/>
+      <attribs>
+         <combo attributeName="autoplay" selection="off"/>
+      </attribs>
+   </obj>
+   <obj type="grains_bank" name="bank" x="14" y="112">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="grains_voice" name="voice" x="14" y="196">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="fx_delay_st" name="delay" x="168" y="196">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="fx_reverb" name="reverb" x="322" y="196">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="gain/vca" name="master_l" x="476" y="196">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="gain/vca" name="master_r" x="476" y="266">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="audio/out stereo" name="dac" x="588" y="196">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets>
+      <net>
+         <source obj="voice" outlet="l"/>
+         <dest obj="delay" inlet="l"/>
+      </net>
+      <net>
+         <source obj="voice" outlet="r"/>
+         <dest obj="delay" inlet="r"/>
+      </net>
+      <net>
+         <source obj="delay" outlet="l"/>
+         <dest obj="reverb" inlet="l"/>
+      </net>
+      <net>
+         <source obj="delay" outlet="r"/>
+         <dest obj="reverb" inlet="r"/>
+      </net>
+      <net>
+         <source obj="reverb" outlet="l"/>
+         <dest obj="master_l" inlet="a"/>
+      </net>
+      <net>
+         <source obj="reverb" outlet="r"/>
+         <dest obj="master_r" inlet="a"/>
+      </net>
+      <net>
+         <source obj="ctl" outlet="master"/>
+         <dest obj="master_l" inlet="v"/>
+         <dest obj="master_r" inlet="v"/>
+      </net>
+      <net>
+         <source obj="master_l" outlet="o"/>
+         <dest obj="dac" inlet="left"/>
+      </net>
+      <net>
+         <source obj="master_r" outlet="o"/>
+         <dest obj="dac" inlet="right"/>
+      </net>
+   </nets>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+      <MidiChannel>1</MidiChannel>
+   </settings>
+   <notes><![CDATA[grains v1: mono granular voice (SCAN / CLOUD / HIT, 20 grains) -> stereo filter -> stereo delay -> Elements reverb -> master.
+Sources: built-in + /grains/*.wav on the SD card (grains_bank). All control from the Launchkey 49 MK3 via grains_ctl
+(lib/grains_ctl.h); docs/grains_cheatsheet.pdf documents it.]]></notes>
+</patch-1.0>

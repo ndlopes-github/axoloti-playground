@@ -1,0 +1,8 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="grains_ctl" name="o14" x="14" y="14"><params/><attribs/></obj>
+   <obj type="grains_bank" name="o94" x="14" y="94"><params/><attribs/></obj>
+   <obj type="grains_voice" name="o174" x="14" y="174"><params/><attribs/></obj>
+   <nets/>
+   <settings><subpatchmode>no</subpatchmode></settings>
+   <notes><![CDATA[DSP-load benchmark of a part of grains v1: grains_ctl grains_bank grains_voice]]></notes>
+</patch-1.0>

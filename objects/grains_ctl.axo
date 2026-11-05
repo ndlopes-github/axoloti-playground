@@ -1,0 +1,85 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="grains_ctl" uuid="8c15f4b7-356b-479a-a6ce-b162be3d5d42">
+      <sDescription>Launchkey 49 MK3 control hub for the grains synth: keys (mono, legato, hold), knobs on three pages, faders, buttons, pads and wheels. It publishes the settings on the control buses that grains_voice, fx_delay_st and fx_reverb read. The mapping lives in lib/grains_ctl.h; docs/grains_cheatsheet.pdf documents it. Use one per patch, next to one grains_bank.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32.positive name="master" description="gain for gain/vca, 64 = unity"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="autoplay">
+            <MenuEntries>
+               <string>off</string>
+               <string>C4</string>
+               <string>C4 dense</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+               <string>2</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../lib/grains_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::GrainsCtl gc;]]></code.declaration>
+      <code.init><![CDATA[gc.init();
+if (attr_autoplay) gc.key_on(60, 100);  // test aids for -runTest probes: hold C4,
+if (attr_autoplay == 2) {                // and fill the grain pool (worst-case DSP load)
+   gc.knob[freak::GPAGE_GRAIN][freak::GK_DENSITY] = 127;
+   gc.knob[freak::GPAGE_SOUND][freak::GK_SIZE] = 100;
+}
+gc.tick();]]></code.init>
+      <code.krate><![CDATA[gc.tick();
+// Events to the patcher log, at most one per 64 ticks; grains_bank logs at
+// the other half of the cycle (the log keeps one message per burst).
+if ((gc.ticks & 63) == 0) {
+   freak::Event e;
+   if (gc.pop_event(e)) {
+      static const char *const page[3] = {"SOUND", "GRAIN", "FX"};
+      static const char *const mode[3] = {"SCAN", "CLOUD", "HIT"};
+      switch (e.type) {
+      case freak::EV_PAGE:
+         LogTextMessage("grains: knob page %s (CC %d)", page[e.a % 3], e.b);
+         break;
+      case freak::EV_RESET:
+         LogTextMessage("grains: reset to the power-on sound");
+         break;
+      case freak::EV_PRESET:
+         LogTextMessage("grains: preset %d %s", e.a, freak::kGrainPresets[e.a].name);
+         break;
+      case freak::EV_DICE:
+         LogTextMessage("grains: dice, mode %s", mode[e.a % 3]);
+         break;
+      case freak::EV_MODE:
+         LogTextMessage("grains: mode %s", mode[e.a % 3]);
+         break;
+      case freak::EV_SOURCE:
+         LogTextMessage("grains: source %d %s", e.a, freak::bank().name[e.a % freak::kMaxSources]);
+         break;
+      case freak::EV_HOLD:
+         LogTextMessage("grains: hold %s", e.a ? "on" : "off");
+         break;
+      case freak::EV_FREEZE:
+         LogTextMessage("grains: freeze latch %s", e.a ? "on" : "off");
+         break;
+      case freak::EV_PICKED:
+         if (e.a == freak::kPickedFader)
+            LogTextMessage("grains: fader %d caught up at %d", e.b + 1, e.c);
+         else
+            LogTextMessage("grains: knob %d caught up on page %s at %d", e.b + 1, page[e.a % 3], e.c);
+         break;
+      case freak::EV_UNMAPPED:
+         LogTextMessage("grains: unmapped CC %d on ch %d (value %d)", e.b, e.a, e.c);
+         break;
+      }
+   }
+}
+outlet_master = (int32_t)(freak::bus().master * (1 << 27));]]></code.krate>
+      <code.midihandler><![CDATA[gc.midi(status, data1, data2, freak::bank().count);]]></code.midihandler>
+   </obj.normal>
+</objdefs>

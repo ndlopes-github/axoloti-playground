@@ -1,0 +1,74 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="grains_bench" uuid="3f6d2b8e-41a7-4c59-9e0d-7b2c1a5f8e64">
+      <sDescription>Development aid: the grain engine (lib/grains.h) at a fixed number of live grains, reading a 2 s source in SDRAM with scattered positions, for DSP-load measurements with -runTest.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="grains">
+            <MenuEntries>
+               <string>0</string>
+               <string>8</string>
+               <string>16</string>
+               <string>24</string>
+               <string>32</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>8</string>
+               <string>16</string>
+               <string>24</string>
+               <string>32</string>
+            </CEntries>
+         </combo>
+         <combo name="mem">
+            <MenuEntries>
+               <string>sdram</string>
+               <string>ccm</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../../lib/grains.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::GrainEngine eng;
+freak::GrainSource src;
+freak::GrainParams p;
+float l[BUFSIZE], r[BUFSIZE];
+int32_t ticks;
+int16_t ccm_src[8000];  // object storage is in CCM (.bss)]]></code.declaration>
+      <code.init><![CDATA[const int32_t n = attr_mem ? 8000 : 96000;
+int16_t *d = attr_mem ? ccm_src : (int16_t *)sdram_malloc(n * sizeof(int16_t));
+src.data = d; src.len = d ? n : 0; src.ratio = 1.0f;
+float ph = 0.0f;
+for (int32_t i = 0; d && i < n; i++) {  // 261.6 Hz saw
+   d[i] = (int16_t)((2.0f * ph - 1.0f) * 20000.0f);
+   ph += 261.63f / 48000.0f;
+   if (ph >= 1.0f) ph -= 1.0f;
+}
+eng.init(1234);
+p.mode = freak::GM_SCAN; p.position = 0.3f; p.size = 0.1f;
+p.density = attr_grains * 10.0f;  // overlap = density x size = attr_grains
+p.spray = 0.2f; p.scatter = 7.0f; p.octave_prob = 0.3f; p.reverse_prob = 0.3f;
+p.stereo = 1.0f; p.shape = 0.3f; p.scan_speed = 0.5f; p.pitch = 0.0f;
+p.freeze = false; p.active = attr_grains > 0;
+ticks = 0;]]></code.init>
+      <code.krate><![CDATA[for (int i = 0; i < BUFSIZE; i++) l[i] = r[i] = 0.0f;
+eng.render(src, p, l, r);
+for (int i = 0; i < BUFSIZE; i++) {
+   outlet_l[i] = (int32_t)(freak::clampf(l[i], -1.0f, 1.0f) * (1 << 27));
+   outlet_r[i] = (int32_t)(freak::clampf(r[i], -1.0f, 1.0f) * (1 << 27));
+}
+if (++ticks == 2400) LogTextMessage("grains_bench: %d live grains, %u started", eng.active_count(), eng.spawned);]]></code.krate>
+   </obj.normal>
+</objdefs>

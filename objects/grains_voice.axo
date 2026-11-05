@@ -1,0 +1,26 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="grains_voice" uuid="a1f69399-a273-4c8b-8a12-cfeec3d195b9">
+      <sDescription>The grains synth's voice (mono): up to 20 grains from a bank source (SCAN, CLOUD or HIT), into a stereo state-variable filter (LP/BP/HP) and amp, with an amp envelope, a mod envelope (to cutoff and optionally position, can cycle) and glide. Settings come from the grains_ctl buses and sources from grains_bank. The code is lib/grains_voice.h, shared with the host renderer.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/grains_voice.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::GrainVoice gv;
+float l[BUFSIZE], r[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[gv.init(0x2545F491u);]]></code.init>
+      <code.krate><![CDATA[gv.render(l, r);
+for (int i = 0; i < BUFSIZE; i++) {
+   outlet_l[i] = (int32_t)(l[i] * (1 << 27));
+   outlet_r[i] = (int32_t)(r[i] * (1 << 27));
+}]]></code.krate>
+   </obj.normal>
+</objdefs>
