@@ -25,13 +25,19 @@ tools/axo_dfu: tools/axo_dfu.c
 
 cheatsheet: docs/cheatsheet.pdf docs/grains_cheatsheet.pdf
 
+# Panel overlays for the Launchkey (print at actual size, cut out)
+overlays: docs/overlays.pdf
+
+docs/overlays.pdf: docs/overlays.tex
+	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error overlays.tex >/dev/null && latexmk -c overlays.tex >/dev/null
+
 docs/cheatsheet.pdf: docs/cheatsheet.tex
 	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error cheatsheet.tex >/dev/null && latexmk -c cheatsheet.tex >/dev/null
 
 docs/grains_cheatsheet.pdf: docs/grains_cheatsheet.tex
 	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error grains_cheatsheet.tex >/dev/null && latexmk -c grains_cheatsheet.tex >/dev/null
 
-.PHONY: all test cheatsheet
+.PHONY: all test cheatsheet overlays
 
 # Host render of one voice with the real Braids code (needs the Ksoloti firmware tree):
 #   make render && ./tests/render_freak out.wav <shape> <midi note>
