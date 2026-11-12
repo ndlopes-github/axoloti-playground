@@ -1,0 +1,70 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="soliton_cycles" uuid="3b1e7c55-58a2-4e0b-9f0d-6a2f4c8e1d97">
+      <sDescription>Development aid: CPU cycles (DWT cycle counter) of the soliton field's work, on the board: each of the 12 work items of a step (max over ~1300 runs), one 128-point real FFT and inverse, one 128-point complex FFT, and 16 samples of playback. One line to the patcher log, for -runTest.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="engine">
+            <MenuEntries>
+               <string>SHOCK</string>
+               <string>SOLITON</string>
+               <string>CHAOS</string>
+               <string>ROGUE</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+               <string>2</string>
+               <string>3</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../../lib/soliton_field.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::Field fld;
+freak::FieldCtl fc;
+float pbuf[16];
+float xr[128];
+freak::Cplx X[65], z[128];
+uint32_t blocks;
+uint32_t mx[12];
+uint32_t c_rfft, c_irfft, c_cfft, c_play;]]></code.declaration>
+      <code.init><![CDATA[CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+fld.init(1);
+fc.engine = attr_engine; fc.timbre = 0.6f; fc.color = 0.3f; fc.damp = 0.0f; fc.rate = 5.0f; fc.f0 = 220.0f;
+const float ph[3] = {0.3f, 0.7f, 1.1f};
+fld.note_on(fc, 0.8f, 0.0f, 0.3f, ph, true);
+for (int i = 0; i < 128; i++) { xr[i] = freak::fast_sin(0.1f * i); z[i].re = xr[i]; z[i].im = 0.0f; }
+blocks = 0;
+for (int i = 0; i < 12; i++) mx[i] = 0;
+c_rfft = c_irfft = c_cfft = c_play = 0;]]></code.init>
+      <code.krate><![CDATA[blocks++;
+if (blocks > 100 && blocks < 1400) {
+   const int s = fld.item;
+   uint32_t t0 = DWT->CYCCNT;
+   fld.run_item(fc);
+   uint32_t d = DWT->CYCCNT - t0;
+   if (d > mx[s]) mx[s] = d;
+   t0 = DWT->CYCCNT;
+   fld.play(pbuf, 16, 220.0f);
+   c_play = DWT->CYCCNT - t0;
+   if (blocks == 1000) {
+      t0 = DWT->CYCCNT; freak::rfft(xr, X, 128, z); c_rfft = DWT->CYCCNT - t0;
+      t0 = DWT->CYCCNT; freak::irfft(X, xr, 128, z); c_irfft = DWT->CYCCNT - t0;
+      t0 = DWT->CYCCNT; freak::cfft(z, 128, false); c_cfft = DWT->CYCCNT - t0;
+   }
+}
+if (blocks == 1500) {
+   LogTextMessage("cycles %s: item max %d %d %d %d %d %d %d %d | %d %d %d | %d | rfft128 %d irfft128 %d cfft128 %d play16 %d | h x1e4 %d",
+      attr_engine == 0 ? "SHOCK" : attr_engine == 1 ? "SOLITON" : attr_engine == 2 ? "CHAOS" : "ROGUE",
+      mx[0], mx[1], mx[2], mx[3], mx[4], mx[5], mx[6], mx[7], mx[8], mx[9], mx[10], mx[11],
+      c_rfft, c_irfft, c_cfft, c_play, (int)(fld.h * 1e4f));
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

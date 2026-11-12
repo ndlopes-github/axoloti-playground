@@ -1,0 +1,25 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="soliton_ctl" name="ctl" x="14" y="14">
+      <params/>
+      <attribs>
+         <combo attributeName="startpreset" selection="1 shock pluck"/>
+      </attribs>
+   </obj>
+   <obj type="soliton_voice" name="v0" x="14" y="112">
+      <params/>
+      <attribs>
+         <combo attributeName="autoplay" selection="C3"/>
+      </attribs>
+   </obj>
+   <obj type="audio/out stereo" name="dac" x="532" y="112">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets>
+      <net><source obj="v0" outlet="wave"/><dest obj="dac" inlet="left"/></net>
+   </nets>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+   </settings>
+   <notes><![CDATA[DSP-load benchmark: soliton_ctl at preset 1 shock pluck, 1 autoplaying voice(s).]]></notes>
+</patch-1.0>

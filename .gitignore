@@ -20,3 +20,5 @@ tests/render_bank
 tests/render_grains
 tests/run_groove
 tests/render_groove
+tests/run_soliton
+tests/render_soliton

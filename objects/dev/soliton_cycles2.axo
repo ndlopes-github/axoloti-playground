@@ -1,0 +1,56 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="soliton_cycles2" uuid="9d4b2f60-7a1e-4c3d-8e5f-0b6a7c8d9e10">
+      <sDescription>Development aid: CPU cycles (DWT cycle counter) of the pieces of the soliton field's work items, to find where the cycles go. One line to the patcher log, for -runTest.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../../lib/soliton_field.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::Field fld;
+freak::FieldCtl fc;
+float xr[256];
+freak::Cplx X[129], z[128];
+uint32_t blocks;
+uint32_t c[12];
+volatile float sink;]]></code.declaration>
+      <code.init><![CDATA[CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+fld.init(1);
+fc.engine = freak::ENG_SOLITON; fc.timbre = 0.6f; fc.color = 0.3f; fc.damp = 0.0f; fc.rate = 5.0f; fc.f0 = 220.0f;
+const float ph[3] = {0.3f, 0.7f, 1.1f};
+fld.note_on(fc, 0.8f, 0.0f, 0.3f, ph, true);
+for (int i = 0; i < 4; i++) fld.run_item(fc);
+for (int i = 0; i < 256; i++) xr[i] = freak::fast_sin(0.1f * i);
+for (int i = 0; i < 129; i++) { X[i].re = 0.01f * i; X[i].im = 0.02f; }
+for (int i = 0; i < 128; i++) { z[i].re = xr[i]; z[i].im = 0.0f; }
+blocks = 0;
+for (int i = 0; i < 12; i++) c[i] = 0;]]></code.init>
+      <code.krate><![CDATA[blocks++;
+if (blocks == 1000) {
+   uint32_t t0;
+   t0 = DWT->CYCCNT; fld.factors(0, 43); c[0] = DWT->CYCCNT - t0;
+   float s = 0, cc, sn;
+   t0 = DWT->CYCCNT; for (int k = 0; k < 43; k++) { freak::sincos_unit(0.37f * k * k, cc, sn); s += cc + sn; } c[1] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; for (int k = 0; k < 43; k++) s += freak::exp_acc(-0.01f * k * k); c[2] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; freak::cfft_fwd(z, 64); c[3] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; freak::irfft_pre(X, 256, z); c[4] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; freak::irfft_pre(X, 128, z); c[5] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; freak::irfft_post(z, xr, 128); c[6] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; freak::rfft(xr, X, 128, z); c[7] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; fld.half_linear(); c[8] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; freak::cfft128_bitrev(z); c[9] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; freak::cfft128_pass(z); c[10] = DWT->CYCCNT - t0;
+   t0 = DWT->CYCCNT; fld.table_spectrum(fc); c[11] = DWT->CYCCNT - t0;
+   sink = s;
+}
+if (blocks == 1500) {
+   LogTextMessage("cycles2: factors %d | 43 sincos %d | 43 exp %d | cfft64 %d | irfft_pre256 %d pre128 %d post128 %d | rfft128 %d | half_linear %d | bitrev128 %d pass128 %d | table_spectrum %d",
+      c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11]);
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

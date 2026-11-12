@@ -1,0 +1,50 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="soliton_voice" uuid="f73eaa7b-4086-44c3-ae2d-4b1cd96850e9">
+      <sDescription>One voice of the soliton synth: a periodic field that evolves under a nonlinear wave equation (Burgers, KdV, Kuramoto-Sivashinsky or NLS) is the waveform, played at the note's pitch, then a state-variable filter (LP/BP/HP) and amp, with an amp envelope, a mod envelope (to cutoff, optionally timbre and the field's rate) and glide. Its settings come from the soliton_ctl buses, so it only works next to one. Made for a polyphonic subpatch: wire midi/in/keyb note, gate and velocity. The code is lib/soliton_voice.h, shared with the host renderer.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets>
+         <frac32.bipolar name="note" description="from midi/in/keyb"/>
+         <bool32 name="gate" description="from midi/in/keyb"/>
+         <frac32.positive name="velocity" description="from midi/in/keyb"/>
+      </inlets>
+      <outlets>
+         <frac32buffer name="wave"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="autoplay">
+            <MenuEntries>
+               <string>off</string>
+               <string>C3</string>
+               <string>G3</string>
+               <string>C4</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>48</string>
+               <string>55</string>
+               <string>60</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../lib/soliton_voice.h</include>
+      </includes>
+      <code.declaration><![CDATA[// Trivially destructible (README: atexit). Not named "voice": the
+// polyphonic subpatch generates a class of that name.
+freak::SolVoice sv;
+float out[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[sv.init();]]></code.init>
+      <code.krate><![CDATA[// Axoloti note = (MIDI - 64) << 21; frac32 full scale = 1 << 27.
+// autoplay (test aid for -runTest): hold a note at velocity 0.8.
+if (attr_autoplay)
+   sv.render((float)attr_autoplay, true, 0.8f, out);
+else
+   sv.render(64.0f + inlet_note * (1.0f / (1 << 21)), inlet_gate > 0,
+             inlet_velocity * (1.0f / (1 << 27)), out);
+for (int i = 0; i < BUFSIZE; i++)
+   outlet_wave[i] = (int32_t)(out[i] * (1 << 27));]]></code.krate>
+   </obj.normal>
+</objdefs>

@@ -34,6 +34,20 @@ in 16 styles with variations (four each of funk, neo-soul, boom-bap and
 broken beat, in apc-chord's notation); a style sets the tempo, swing and
 drunk too. See [`docs/groove_cheatsheet.pdf`](docs/groove_cheatsheet.pdf).
 
+**`patches/soliton/soliton_v1.axp`** is the fourth patch: 3 voices whose
+oscillator is a wave field on a ring that evolves under a nonlinear PDE.
+One period of the field is one cycle of the waveform, played at the note's
+pitch, and the field's time moves the timbre. There are four engines:
+Burgers (SHOCK: a sine steepens into a saw and decays), KdV (SOLITON: a
+wave breaks into solitons), Kuramoto–Sivashinsky (CHAOS: drifting cells,
+from order to chaos), and focusing NLS (ROGUE: a wave group whose sidebands
+grow, focus and recur). Velocity sets the field's size, so it changes the
+evolution. Pads freeze, rewind (KdV and NLS only), speed up or kick the
+field. Filter, envelopes, LFO and effects are as in freak, with freak's
+layout plus a FIELD knob page. See
+[`docs/soliton_cheatsheet.pdf`](docs/soliton_cheatsheet.pdf) and the
+numerics in `lib/soliton_field.h`. It is not installed anywhere yet.
+
 ## Hardware and software
 
 - Axoloti Core (original board), running **Ksoloti Patcher 1.1.0** in Firmware
@@ -78,6 +92,11 @@ drunk too. See [`docs/groove_cheatsheet.pdf`](docs/groove_cheatsheet.pdf).
 | `lib/sd_files.h`, `lib/groove_kit_loader.h` | SD-card file helpers shared by the grains and groove loaders, and the kit loader (`/kit/NN_name.wav`). |
 | `objects/groove_*.axo`, `objects/kit_bb/` | The groove objects (hub, kit, drums, synth, mix) and the drum kit with its credits. |
 | `tools/make_kit.sh`, `tests/test_groove.cpp`, `tests/render_groove.cpp` | The kit builder (`make kit`, from pinned CC0 sources), the groove tests, and a host render of a recorded broken-beat loop (`make render_groove`). |
+| `lib/soliton_field.h` | The soliton oscillator: the four PDEs, Fourier pseudo-spectral (128 points, 42 modes), Strang splitting with RK4 (Cayley rotation for NLS), the step limits, a step cut into 12 work items, the band-limited playback table. Numerics and their justification are in the comments. |
+| `lib/pde_fft.h`, `third_party/cmsis_fft/` | Real and complex FFTs for the solver: CMSIS-DSP 1.6's radix-8 FFT (Apache-2.0, vendored, split so one FFT spreads over ticks), the real-transform splits, accurate twiddles and `sincos_unit`. |
+| `lib/soliton_ctl.h`, `lib/soliton_voice.h`, `objects/soliton_*.axo` | The soliton mapping (three knob pages, engines, time pads, presets), its voice (field, SVF, envelopes) and objects. The mapping is the single source of truth for the soliton cheat sheet. |
+| `tests/test_soliton.cpp`, `tests/render_soliton.cpp` | Tests against exact results (FFT vs DFT, KdV energy, Burgers slope vs characteristics, KS and NLS growth rates vs linear theory, resolution over the knob range, rewind, mapping, voice bounds) and a preset renderer (`make render_soliton`), whose `probe` mode prints what `objects/dev/probe.axo` logs on the board. |
+| `objects/dev/soliton_cycles*.axo`, `patches/bench_soliton/` | Cycle counts of the solver's pieces on the board (DWT counter) and the DSP-load benchmarks. |
 | `tests/test_freak.cpp` | Host unit tests (`make test`, with ASan/UBSan). |
 | `objects/launchkey_ctl.axo`, `freak_voice.axo`, `fx_delay.axo` | The synth's objects: control hub, one voice, delay. They talk through the control bus, not through wires. |
 | `objects/braids_osc.axo` | Stand-alone Braids digital macro-oscillator, with inlets: pitch, trig (strike), timbre, colour, shape and `shapecv`. |
@@ -105,6 +124,10 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
 | grain engine, per live grain | 1.76 % | |
 | `groove_v1`, idle / beat + 4-voice chord (delay, reverb, chorus) | 46.5 % / 80.5 % | 32.1 KB (controller and sequencer at -Os) |
 | groove kit load from SD (16 files, 946 KB, background thread) | 0.45 s (2.1 MB/s) | |
+| `soliton_v1`, idle (delay + reverb) | 37.5–38 % | 36.4 KB |
+| 3 soliton voices + delay + reverb, all sounding (`bench_soliton`) | 61.5–68.5 % (89–90.5 % before the voices took turns) | 35.9 KB |
+| soliton field, one work item (cycles, worst of ~1300, interrupts included) | 4,600–12,900 cycles | |
+| 128-point real FFT / complex FFT (CMSIS radix 8, firmware bit reversal) | 5,700 / 9,300 cycles (radix 2 before: 14,000 / 22,000) | |
 | grains bank load from SD (8 files, 3000 KB, background thread) | 1.06 s (2.8 MB/s) | |
 | Elements reverb / diffuser / string / tube | 19.5 / 7.5 / 5 / 4.5 % | ~0 (code in firmware) |
 | Warps | 46 % | ~0 |

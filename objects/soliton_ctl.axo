@@ -1,0 +1,86 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="soliton_ctl" uuid="f2083721-ae16-40ea-bee3-ca5e599293e1">
+      <sDescription>Launchkey 49 MK3 control hub for the soliton synth: knobs on three pages (SOUND, FIELD, FX), faders, buttons, pads and wheels (standalone mode). It publishes the settings on the control buses that soliton_voice, fx_delay and fx_reverb read. The keys go to the voices (midi/in/keyb in a polyphonic subpatch). The mapping lives in lib/soliton_ctl.h; docs/soliton_cheatsheet.pdf documents it. Use one per patch.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32.positive name="revamount" description="to fx/lmnts/reverb amount"/>
+         <frac32.positive name="master" description="gain for gain/vca, 64 = unity"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="startpreset">
+            <MenuEntries>
+               <string>0 init</string>
+               <string>1 shock pluck</string>
+               <string>2 driven saw</string>
+               <string>3 soliton train</string>
+               <string>4 bump fission</string>
+               <string>5 turbulence</string>
+               <string>6 cells</string>
+               <string>7 rogue breather</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+               <string>2</string>
+               <string>3</string>
+               <string>4</string>
+               <string>5</string>
+               <string>6</string>
+               <string>7</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../lib/soliton_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::SolitonCtl sc;]]></code.declaration>
+      <code.init><![CDATA[sc.init();
+if (attr_startpreset) sc.apply_preset(attr_startpreset);  // test aid for -runTest
+sc.tick();]]></code.init>
+      <code.krate><![CDATA[sc.tick();
+// Events to the patcher log, at most one per 64 ticks (the log keeps one
+// message per burst). No-op when no patcher is connected.
+if ((sc.ticks & 63) == 0) {
+   freak::Event e;
+   if (sc.pop_event(e)) {
+      static const char *const page[3] = {"SOUND", "FIELD", "FX"};
+      switch (e.type) {
+      case freak::EV_PAGE:
+         LogTextMessage("soliton: knob page %s (CC %d)", page[e.a % 3], e.b);
+         break;
+      case freak::EV_RESET:
+         LogTextMessage("soliton: reset to the power-on sound");
+         break;
+      case freak::EV_PRESET:
+         LogTextMessage("soliton: preset %d %s", e.a, freak::kSolPresets[e.a % freak::kNumSolPresets].name);
+         break;
+      case freak::EV_DICE:
+         LogTextMessage("soliton: dice, engine %s", freak::kEngineNames[e.a % freak::NUM_ENGINES]);
+         break;
+      case freak::EV_ENGINE:
+         LogTextMessage("soliton: engine %s", freak::kEngineNames[e.a % freak::NUM_ENGINES]);
+         break;
+      case freak::EV_FREEZE_LATCH:
+         LogTextMessage("soliton: freeze latch %s", e.a ? "on" : "off");
+         break;
+      case freak::EV_PICKED:
+         if (e.a == freak::kPickedFader)
+            LogTextMessage("soliton: fader %d caught up at %d", e.b + 1, e.c);
+         else
+            LogTextMessage("soliton: knob %d caught up on page %s at %d", e.b + 1, page[e.a % 3], e.c);
+         break;
+      case freak::EV_UNMAPPED:
+         LogTextMessage("soliton: unmapped CC %d on ch %d (value %d)", e.b, e.a, e.c);
+         break;
+      }
+   }
+}
+outlet_revamount = (int32_t)(freak::bus().rev_amount * (1 << 27));
+outlet_master = (int32_t)(freak::bus().master * (1 << 27));]]></code.krate>
+      <code.midihandler><![CDATA[sc.midi(status, data1, data2);]]></code.midihandler>
+   </obj.normal>
+</objdefs>

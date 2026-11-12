@@ -1,7 +1,9 @@
 % Launchkey 49 MK3 overlays: label strips to print at actual size, cut out and
-% lay on the panel next to the controls. Page 1 freak, page 2 grains, page 3 groove.
-% Build: make overlays.  Labels come from lib/launchkey_ctl.h (freak) and
-% lib/grains_ctl.h (grains), as on the cheat sheets.
+% lay on the panel next to the controls. Page 1 freak, page 2 grains, page 3 groove,
+% page 4 soliton.
+% Build: make overlays.  Labels come from lib/launchkey_ctl.h (freak),
+% lib/grains_ctl.h (grains), lib/groove_ctl.h (groove) and lib/soliton_ctl.h
+% (soliton), as on the cheat sheets.
 %
 % Spacing: the centre-to-centre distances below are NOT measured (Novation
 % publishes no panel drawing). Each strip is divided into one cell per
@@ -28,6 +30,7 @@
 \definecolor{lfoc}{RGB}{150,60,170}    % LFO
 \definecolor{fltc}{RGB}{215,60,50}     % filter
 \definecolor{freec}{RGB}{160,160,160}  % unassigned
+\definecolor{engc}{RGB}{190,40,110}    % soliton engine parameters
 
 \tikzset{
   cut/.style={draw=black, line width=0.35pt},             % cut here
@@ -239,6 +242,58 @@
   \tag{103}{40}{\FX{GROOVE}\\\sm{left of pads, lower}}
   \tag{122}{50}{\GR{STYLE} (hold)\\\sm{round, upper}}
   \tag{122}{40}{\textcolor{modc}{ERASE} (hold)\\\sm{round, lower}}
+
+  \placement{208}{165}
+  \ruler{8}{16}
+\end{tikzpicture}
+
+%======================================================================== soliton
+\newpage
+\begin{tikzpicture}[x=1mm, y=1mm]
+  \useasboundingbox (0,0) rectangle (297,210);
+  \header{soliton}{3 voices, each a field under a nonlinear PDE}
+
+  \strip{8}{165}{8}{\kp}{15}{%
+    {SPICE\\\GR{RATE}\\\FX{GLIDE}}, {\textcolor{engc}{TIMBRE}\\\GR{AMOUNT}\\\FX{DLY TIME}}, {\textcolor{engc}{COLOR}\\\GR{VEL\(\to\)AMT}\\\FX{DLY FDBK}},
+    {\textcolor{fltc}{CUTOFF}\\\GR{SEED}\\\FX{DLY MIX}}, {\textcolor{fltc}{RESO}\\\GR{MOD\(\to\)RATE}\\\FX{REV AMT}},
+    {\textcolor{modc}{ENV AMT}\\\GR{DAMP}\\\FX{REV TIME}}, {\textcolor{lfoc}{LFO RATE}\\\textcolor{freec}{--}\\\FX{REV DIFF}},
+    {\textcolor{lfoc}{LFO AMT}\\\textcolor{freec}{--}\\\FX{REV LP}}}%
+    {KNOBS \quad black = SOUND (Device Select) \quad \GR{green = FIELD (round button, upper)} \quad \FX{blue = FX (Device Lock)}}
+
+  \strip{8}{145}{8}{\pp}{10}{%
+    {\sm{0}\\init}, {\sm{1}\\shock pluck}, {\sm{2}\\driven saw}, {\sm{3}\\soliton train}, {\sm{4}\\bump fission}, {\sm{5}\\turbulence},
+    {\sm{6}\\cells}, {\sm{7}\\rogue breather}}%
+    {PADS, TOP ROW: presets}
+  \strip{8}{125}{8}{\pp}{10}{%
+    {\GR{FREEZE}\\\sm{time stops}}, {\GR{REWIND}\\\sm{time back}}, {\GR{FAST}\\\sm{time \(\times\)8}}, {\GR{KICK}\\\sm{a bump}},
+    {\textcolor{fltc}{SWEEP}\\\sm{+4 oct}}, {VIBRATO}, {\FX{THROW}\\\sm{delay}}, {\FX{SWELL}\\\sm{reverb}}}%
+    {PADS, BOTTOM ROW: performance, while held (pressure = amount)}
+
+  \strip{8}{103}{9}{\fp}{7}{%
+    \textcolor{ampc}{A}, \textcolor{ampc}{D}, \textcolor{ampc}{S}, \textcolor{ampc}{R},
+    \textcolor{modc}{A}, \textcolor{modc}{D}, \textcolor{modc}{S}, \textcolor{modc}{R}, VOL}%
+    {FADERS \quad \textcolor{ampc}{amp envelope} \quad \textcolor{modc}{mod envelope}}
+  \strip{8}{83}{9}{\fp}{10}{%
+    {\textcolor{fltc}{FILTER}\\\sm{LP/BP/HP}}, {\textcolor{lfoc}{LFO}\\\sm{target}}, {\textcolor{lfoc}{LFO}\\\sm{wave}},
+    {\textcolor{modc}{MOD}\\\sm{\(\to\)timbre}}, {GLIDE}, {\textcolor{fltc}{KEY}\\\sm{track}}, {\textcolor{fltc}{VELO}\\\sm{\(\to\)cutoff}},
+    {\FX{DELAY}}, {NEXT\\\sm{preset}}}%
+    {FADER BUTTONS (press: toggle or next)}
+
+  \node[note, anchor=south west] at (8, 70) {TAGS, one per button};
+  \tag{8}{60}{\(\blacktriangleleft\) \textcolor{engc}{ENGINE}\\\sm{track \(\blacktriangleleft\)}}
+  \tag{27}{60}{\textcolor{engc}{ENGINE} \(\blacktriangleright\)\\\sm{track \(\blacktriangleright\)}}
+  \tag{46}{60}{SOUND\\\sm{Device Select}}
+  \tag{65}{60}{\FX{FX}\\\sm{Device Lock}}
+  \tag{84}{60}{BEND \(\pm\)2 st\\\sm{pitch wheel}}
+  \tag{103}{60}{+LFO\\\sm{mod wheel}}
+  \tag{8}{50}{\textcolor{lfoc}{DICE}\\\sm{Capture MIDI}}
+  \tag{27}{50}{\GR{FREEZE}\\\sm{Quantise}}
+  \tag{46}{50}{\textcolor{lfoc}{TAP LFO}\\\sm{Click}}
+  \tag{65}{50}{RESET\\\sm{Undo}}
+  \tag{65}{40}{\textcolor{modc}{CYCLE}\\\sm{Loop}}
+  \tag{103}{50}{SOUND\\\sm{left of pads, upper}}
+  \tag{103}{40}{\FX{FX}\\\sm{left of pads, lower}}
+  \tag{122}{50}{\GR{FIELD} page\\\sm{round, upper}}
 
   \placement{208}{165}
   \ruler{8}{16}

@@ -108,12 +108,38 @@ measurements.
   at -O3. DSP on the board: 46.5 % idle, 80.5 % with beat + 4-voice chord.
   `make render_groove` with mode `tour` renders every style for one lap.
 
+- soliton (fourth patch, 2026-11-12; not yet installed on flash or a card):
+  each voice's oscillator is a periodic field evolving under Burgers, KdV,
+  Kuramoto–Sivashinsky or focusing NLS (`lib/soliton_field.h`; numerics and
+  their reasons are in its header). Lessons:
+  - **FFT cost on the board** (DWT cycle counter, `objects/dev/soliton_cycles*`):
+    radix-2 was 22,000 cycles for 128 complex points. CMSIS-DSP 1.6's radix 8
+    (vendored in `third_party/cmsis_fft`, namespaced, because the firmware's
+    `arm_*` symbols would clash) plus the firmware's assembly
+    `arm_bitreversal_32` (declared `extern "C"`) take 9,300; a 128-point real
+    FFT takes 5,700.
+  - **DSP load is a 2 ms moving average**, and above the limit the firmware
+    mutes the output. So per-tick work must be bounded: a field step is 12
+    work items of at most ~8,000 cycles, and the voices take turns by the
+    parity of the controller's tick (`SolBus::tick`, global, so idle voices
+    cannot fall into step). One item per tick for all 3 voices measured
+    89–90.5 %; taking turns, 61.5–68.5 %.
+  - Integrating-factor RK4 blew up on KdV at large dispersion; Strang
+    splitting (exact linear flow, RK4 on the nonlinear term) fixed it. Split-step
+    NLS resonates when the top mode's linear phase per substep nears pi
+    (Weideman–Herbst): the step bounds it at 2.5 rad.
+  - `./tests/render_soliton <dir> probe` and `patches/bench_soliton/probe_c3.axp`
+    printed identical RMS, peak and zero-crossing numbers: host and board agree.
+
 ## Open items
 
 - SD card: holds grains (`/start.bin`, `/grains/01..08.wav`). Standalone boot
   from the card was confirmed by Nuno on 2026-11-05. Reach the card via *Board →
   Enter Card Reader Mode*, since the laptop has no SD reader.
 - grains presets are set from the parameter meanings and not yet tuned by ear.
+- soliton: presets are set from the parameter meanings, not tuned by ear, and
+  the patch is not installed (flash or a card: Nuno to choose; the patch
+  switcher would put it on one card with grains and groove).
 - Next sound work: multimode filter, cycling envelope, LFO → timbre on the mod
   wheel, pitch bend, pad LEDs through the DAW port.
 - Plaits port (speech, modal and chord engines): ≈36 KB code + 12 KB tables

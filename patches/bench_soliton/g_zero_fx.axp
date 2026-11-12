@@ -1,0 +1,34 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="soliton_ctl" name="ctl" x="14" y="14">
+      <params/>
+      <attribs>
+         <combo attributeName="startpreset" selection="0 init"/>
+      </attribs>
+   </obj>
+   <obj type="fx_delay" name="delay" x="196" y="112">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="fx_reverb" name="reverb" x="336" y="112">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="audio/out stereo" name="dac" x="532" y="112">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets>
+      <net>
+         <source obj="v0" outlet="wave"/>
+         <dest obj="delay" inlet="in"/>
+      </net>
+      <net><source obj="delay" outlet="l"/><dest obj="reverb" inlet="l"/></net>
+      <net><source obj="delay" outlet="r"/><dest obj="reverb" inlet="r"/></net>
+      <net><source obj="reverb" outlet="l"/><dest obj="dac" inlet="left"/></net>
+      <net><source obj="reverb" outlet="r"/><dest obj="dac" inlet="right"/></net>
+   </nets>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+   </settings>
+   <notes><![CDATA[DSP-load benchmark: soliton_ctl at preset 0 init, 0 autoplaying voice(s), delay and reverb.]]></notes>
+</patch-1.0>
