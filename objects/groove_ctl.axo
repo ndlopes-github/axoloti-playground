@@ -1,0 +1,64 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="groove_ctl" uuid="fdc114e9-16c7-4954-a25d-c1d69ff65f2d">
+      <sDescription>Launchkey 49 MK3 hub of the groove patch: a real-time looper of drums (pads) and chords (keys), with drums generated in 16 styles (after apc-chord), transport, knob pages, faders and buttons. It publishes each block's drum hits, notes and settings on the groove bus that groove_drums, groove_synth and groove_mix read. The mapping lives in lib/groove_ctl.h; docs/groove_cheatsheet.pdf documents it. Use one per patch, above the other groove objects.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="autoplay">
+            <MenuEntries>
+               <string>off</string>
+               <string>beat</string>
+               <string>beat + chord</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+               <string>2</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../lib/groove_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::GrooveCtl gc;]]></code.declaration>
+      <code.init><![CDATA[gc.init();
+if (attr_autoplay) {  // test aids for -runTest probes: a broken-beat loop running,
+   gc.g.generate(freak::kStyleBrokenBeat, false);
+   gc.style_knobs();
+   gc.g.play();
+   if (attr_autoplay == 2) {  // and a held chord (Fm9)
+      gc.midi(0x90, 56, 90); gc.midi(0x90, 60, 90); gc.midi(0x90, 63, 90); gc.midi(0x90, 67, 90);
+   }
+}]]></code.init>
+      <code.krate><![CDATA[gc.tick();
+// Events to the patcher log, at most one per 64 ticks; groove_kit logs at
+// the other half of the cycle (the log keeps one message per burst).
+if ((gc.ticks & 63) == 0) {
+   freak::Event e;
+   if (gc.pop_event(e)) {
+      switch (e.type) {
+      case freak::EV_PAGE: LogTextMessage("groove: knob page %s", e.a == freak::GV_GROOVE ? "GROOVE" : "SYNTH"); break;
+      case freak::GEV_STYLE: LogTextMessage("groove: drums %s%s", freak::kStyles[e.a % freak::kNumStyles].name, e.b ? " (variation)" : ""); break;
+      case freak::GEV_REC: LogTextMessage("groove: record %s", e.a ? "on" : "off"); break;
+      case freak::GEV_TRANSPORT: LogTextMessage("groove: %s", e.a ? "play" : "stop"); break;
+      case freak::GEV_UNDO: LogTextMessage("groove: undo"); break;
+      case freak::GEV_CAPTURE: LogTextMessage("groove: capture %s", e.a ? "done" : "(nothing: play over the running loop)"); break;
+      case freak::GEV_CLEAR: LogTextMessage("groove: cleared %s", e.a == 0 ? "the loop" : e.a == 1 ? "the chords" : "a pad"); break;
+      case freak::GEV_SYNTHPRESET: LogTextMessage("groove: synth %s", freak::kSynthPresets[e.a % freak::kNumSynthPresets].name); break;
+      case freak::GEV_QUANT: LogTextMessage("groove: quantise %s", e.a ? "on" : "off"); break;
+      case freak::GEV_CLICK: LogTextMessage("groove: click %s", e.a ? "on" : "off"); break;
+      case freak::GEV_CHORUS: LogTextMessage("groove: chorus %s", e.a == 0 ? "off" : e.a == 1 ? "I" : e.a == 2 ? "II" : "I+II"); break;
+      case freak::EV_PICKED:
+         if (e.a == freak::kPickedFader) LogTextMessage("groove: fader %d caught up at %d", e.b + 1, e.c);
+         else LogTextMessage("groove: knob %d caught up at %d", e.b + 1, e.c);
+         break;
+      }
+   }
+}]]></code.krate>
+      <code.midihandler><![CDATA[gc.midi(status, data1, data2);]]></code.midihandler>
+   </obj.normal>
+</objdefs>

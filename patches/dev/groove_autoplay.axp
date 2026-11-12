@@ -1,0 +1,84 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="groove_ctl" name="ctl" x="14" y="14">
+      <params/>
+      <attribs>
+         <combo attributeName="autoplay" selection="beat + chord"/>
+      </attribs>
+   </obj>
+   <obj type="groove_kit" name="kit" x="14" y="98">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="groove_drums" name="drums" x="14" y="168">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="groove_synth" name="synth" x="14" y="308">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="groove_mix" name="mix" x="210" y="168">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="audio/out stereo" name="dac" x="406" y="168">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="dev/probe" name="probe1" x="14" y="460"><params/><attribs><spinner attributeName="id" value="1"/></attribs></obj>
+   <obj type="dev/probe" name="probe2" x="168" y="460"><params/><attribs><spinner attributeName="id" value="2"/></attribs></obj>
+   <obj type="dev/probe" name="probe3" x="322" y="460"><params/><attribs><spinner attributeName="id" value="3"/></attribs></obj>
+   <obj type="dev/probe" name="probe4" x="476" y="460"><params/><attribs><spinner attributeName="id" value="4"/></attribs></obj>
+   <nets>
+      <net>
+         <source obj="drums" outlet="l"/>
+         <dest obj="mix" inlet="drumsl"/>
+         <dest obj="probe1" inlet="in"/>
+      </net>
+      <net>
+         <source obj="drums" outlet="r"/>
+         <dest obj="mix" inlet="drumsr"/>
+      </net>
+      <net>
+         <source obj="drums" outlet="sendl"/>
+         <dest obj="mix" inlet="dsendl"/>
+      </net>
+      <net>
+         <source obj="drums" outlet="sendr"/>
+         <dest obj="mix" inlet="dsendr"/>
+      </net>
+      <net>
+         <source obj="synth" outlet="l"/>
+         <dest obj="mix" inlet="synthl"/>
+         <dest obj="probe2" inlet="in"/>
+      </net>
+      <net>
+         <source obj="synth" outlet="r"/>
+         <dest obj="mix" inlet="synthr"/>
+      </net>
+      <net>
+         <source obj="synth" outlet="sendl"/>
+         <dest obj="mix" inlet="ssendl"/>
+      </net>
+      <net>
+         <source obj="synth" outlet="sendr"/>
+         <dest obj="mix" inlet="ssendr"/>
+      </net>
+      <net>
+         <source obj="mix" outlet="l"/>
+         <dest obj="dac" inlet="left"/>
+         <dest obj="probe3" inlet="in"/>
+      </net>
+      <net>
+         <source obj="mix" outlet="r"/>
+         <dest obj="dac" inlet="right"/>
+         <dest obj="probe4" inlet="in"/>
+      </net>
+   </nets>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+      <MidiChannel>1</MidiChannel>
+   </settings>
+   <notes><![CDATA[Board check for groove v1 (-runTest): broken-beat loop running and an Fm9 chord held;
+probes 1-4 = drums L, synth L, output L, output R.]]></notes>
+</patch-1.0>

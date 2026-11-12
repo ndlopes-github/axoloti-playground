@@ -1,0 +1,32 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="groove_synth" uuid="ce2d49c8-2cb6-4fe9-bb94-8a37590c0073">
+      <sDescription>Chord synth of the groove patch, after the Juno and the Prophet: 4 voices of two band-limited oscillators (saw to pulse, PWM, detune) and a sub, a 4-pole resonant low-pass with its own envelope, an amp envelope, and a Juno-style stereo chorus (I, II, I+II). Notes and settings come from the groove bus (keys and the loop).</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+         <frac32buffer name="sendl"/>
+         <frac32buffer name="sendr"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/groove_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::Synth syn;
+freak::Chorus chorus;
+float mono[BUFSIZE], l[BUFSIZE], r[BUFSIZE], sl[BUFSIZE], sr[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[syn.init();
+chorus.init();]]></code.init>
+      <code.krate><![CDATA[freak::groove_synth_block(syn, chorus, freak::gbus_groove(), mono, l, r, sl, sr);
+for (int i = 0; i < BUFSIZE; i++) {
+   outlet_l[i] = (int32_t)(l[i] * (1 << 27));
+   outlet_r[i] = (int32_t)(r[i] * (1 << 27));
+   outlet_sendl[i] = (int32_t)(sl[i] * (1 << 27));
+   outlet_sendr[i] = (int32_t)(sr[i] * (1 << 27));
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

@@ -24,6 +24,16 @@ the WAV files in `/grains` on the card. A starter bank of 8, rendered with
 freak's own oscillators, is in `objects/grains_wav/` and is copied to the card
 with the patch. See [`docs/grains_cheatsheet.pdf`](docs/grains_cheatsheet.pdf).
 
+**`patches/groove/groove_v1.axp`** is the third patch, on a card of its own:
+a real-time looper for drums and chords. The pads play a sampled kit of 16
+dry drum-machine sounds (TR-808, 909, 707, 727; CC0, in `objects/kit_bb/`).
+The keys play a 4-voice synth after the Juno and the Prophet, recorded as
+played. The transport buttons run the looper: record, overdub, capture,
+undo, quantise and click, over a loop of 4 bars. Drums can also be written
+in 16 styles with variations (four each of funk, neo-soul, boom-bap and
+broken beat, in apc-chord's notation); a style sets the tempo, swing and
+drunk too. See [`docs/groove_cheatsheet.pdf`](docs/groove_cheatsheet.pdf).
+
 ## Hardware and software
 
 - Axoloti Core (original board), running **Ksoloti Patcher 1.1.0** in Firmware
@@ -63,6 +73,11 @@ with the patch. See [`docs/grains_cheatsheet.pdf`](docs/grains_cheatsheet.pdf).
 | `lib/wav.h`, `lib/grains_bank.h`, `lib/grains_loader.h` | WAV parsing and conversion, the source bank with its built-in source, and the board-side loader thread (FatFs, sector-aligned reads). |
 | `objects/grains_*.axo`, `fx_delay_st.axo` | The grains objects (control hub, bank, voice) and a stereo delay. |
 | `tests/test_grains*.cpp`, `tests/render_grains.cpp`, `tests/render_bank.cpp` | Host tests for the engine, loader, controller and voice; a preset renderer; the starter-bank renderer (`make bank`). |
+| `lib/groove_seq.h` | The groove looper: 960-PPQ clock, the 4-bar loop (record, skip-once, undo/redo, capture), swing and drunk, and the 16 drum styles (funk, neo-soul, boom-bap, broken beat) with apc-chord's variation rules. |
+| `lib/groove_synth.h`, `lib/groove_drums.h`, `lib/groove_mix.h`, `lib/groove_ctl.h` | The 4-voice synth (PolyBLEP oscillators, zero-delay-feedback ladder, Juno chorus), the drum sampler and its kit, the mixer (delay, Elements reverb, click), and the Launchkey mapping. |
+| `lib/sd_files.h`, `lib/groove_kit_loader.h` | SD-card file helpers shared by the grains and groove loaders, and the kit loader (`/kit/NN_name.wav`). |
+| `objects/groove_*.axo`, `objects/kit_bb/` | The groove objects (hub, kit, drums, synth, mix) and the drum kit with its credits. |
+| `tools/make_kit.sh`, `tests/test_groove.cpp`, `tests/render_groove.cpp` | The kit builder (`make kit`, from pinned CC0 sources), the groove tests, and a host render of a recorded broken-beat loop (`make render_groove`). |
 | `tests/test_freak.cpp` | Host unit tests (`make test`, with ASan/UBSan). |
 | `objects/launchkey_ctl.axo`, `freak_voice.axo`, `fx_delay.axo` | The synth's objects: control hub, one voice, delay. They talk through the control bus, not through wires. |
 | `objects/braids_osc.axo` | Stand-alone Braids digital macro-oscillator, with inlets: pitch, trig (strike), timbre, colour, shape and `shapecv`. |
@@ -88,6 +103,8 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
 | `freak_v1` (3 voices with filter and envelopes + delay + reverb) | 58.5 % | 42.9 KB (95 %, Braids at -Os) |
 | `grains_v1`, idle / all 20 grains (stereo delay + reverb) | 41 % / 75.5 % | 28.2 KB (controller at -Os) |
 | grain engine, per live grain | 1.76 % | |
+| `groove_v1`, idle / beat + 4-voice chord (delay, reverb, chorus) | 46.5 % / 80.5 % | 32.1 KB (controller and sequencer at -Os) |
+| groove kit load from SD (16 files, 946 KB, background thread) | 0.45 s (2.1 MB/s) | |
 | grains bank load from SD (8 files, 3000 KB, background thread) | 1.06 s (2.8 MB/s) | |
 | Elements reverb / diffuser / string / tube | 19.5 / 7.5 / 5 / 4.5 % | ~0 (code in firmware) |
 | Warps | 46 % | ~0 |

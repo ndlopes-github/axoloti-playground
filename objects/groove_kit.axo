@@ -1,0 +1,77 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="groove_kit" uuid="782f5324-896e-475b-ab45-eefac314c710">
+      <sDescription>Drum kit of the groove patch: 16 one-shots, /kit/NN_name.wav on the SD card (NN = 01..16 is the pad; 16, 24 or 32-bit or float, any rate, stereo mixed to mono), loaded into SDRAM by a background thread while the patch already plays. Until then, or without a card, each pad plays a synthesised stand-in. The kit in objects/kit_bb goes to /kit when the patch is uploaded to the SD card or goes live with a card inserted. Use one per patch.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <file-depends>
+         <file-depend localFilename="kit_bb/01_kick.wav" targetPath="/kit/01_kick.wav"/>
+         <file-depend localFilename="kit_bb/02_snare.wav" targetPath="/kit/02_snare.wav"/>
+         <file-depend localFilename="kit_bb/03_ghost.wav" targetPath="/kit/03_ghost.wav"/>
+         <file-depend localFilename="kit_bb/04_clap.wav" targetPath="/kit/04_clap.wav"/>
+         <file-depend localFilename="kit_bb/05_chat.wav" targetPath="/kit/05_chat.wav"/>
+         <file-depend localFilename="kit_bb/06_ohat.wav" targetPath="/kit/06_ohat.wav"/>
+         <file-depend localFilename="kit_bb/07_rim.wav" targetPath="/kit/07_rim.wav"/>
+         <file-depend localFilename="kit_bb/08_shake.wav" targetPath="/kit/08_shake.wav"/>
+         <file-depend localFilename="kit_bb/09_kick2.wav" targetPath="/kit/09_kick2.wav"/>
+         <file-depend localFilename="kit_bb/10_snr2.wav" targetPath="/kit/10_snr2.wav"/>
+         <file-depend localFilename="kit_bb/11_snap.wav" targetPath="/kit/11_snap.wav"/>
+         <file-depend localFilename="kit_bb/12_rim8.wav" targetPath="/kit/12_rim8.wav"/>
+         <file-depend localFilename="kit_bb/13_chat9.wav" targetPath="/kit/13_chat9.wav"/>
+         <file-depend localFilename="kit_bb/14_conga.wav" targetPath="/kit/14_conga.wav"/>
+         <file-depend localFilename="kit_bb/15_tom.wav" targetPath="/kit/15_tom.wav"/>
+         <file-depend localFilename="kit_bb/16_ride.wav" targetPath="/kit/16_ride.wav"/>
+      </file-depends>
+      <includes>
+         <include>../lib/groove_kit_loader.h</include>
+      </includes>
+      <code.declaration><![CDATA[THD_WORKING_AREA(waLoader, 2048);  // FatFs with long names keeps a 512-byte buffer on the stack
+thread_t *thd;
+uint8_t *stage;
+uint32_t ticks;
+bool reported;
+
+// The loader thread: waits for the first DSP tick (after every object's
+// init, so it never races them for the SDRAM allocator), then loads.
+static void loader(void *arg) {
+   freak::Kit &k = freak::kit();
+   while (!k.go) {
+      if (chThdShouldTerminateX()) return;
+      chThdSleepMilliseconds(5);
+   }
+   freak::kit_load_all(k, (uint8_t *)arg);
+}]]></code.declaration>
+      <code.init><![CDATA[const int32_t n = freak::builtin_total();
+int16_t *mem = 0;
+if (sdram_get_free() > n * 2 + 65536) mem = (int16_t *)sdram_malloc(n * sizeof(int16_t));
+freak::kit_init(freak::kit(), mem);
+stage = 0;
+if (sdram_get_free() > (int32_t)(freak::kMaxBlockAlign + freak::kStage) + 65536)
+   stage = (uint8_t *)sdram_malloc(freak::kMaxBlockAlign + freak::kStage);
+thd = stage ? chThdCreateStatic(waLoader, sizeof(waLoader), NORMALPRIO, loader, stage) : 0;
+ticks = 0;
+reported = false;]]></code.init>
+      <code.dispose><![CDATA[if (thd) {
+   chThdTerminate(thd);
+   chThdWait(thd);
+   thd = 0;
+}]]></code.dispose>
+      <code.krate><![CDATA[freak::Kit &k = freak::kit();
+k.go = true;
+ticks++;
+if (!reported && k.state == freak::BANK_DONE && (ticks & 63) == 32) {
+   reported = true;
+   if (k.status == freak::BANK_NO_CARD)
+      LogTextMessage("groove: no SD card, built-in kit");
+   else if (k.status == freak::BANK_NO_DIR)
+      LogTextMessage("groove: no /kit folder on the card, built-in kit");
+   else
+      LogTextMessage("groove: kit %d of 16 pads from the card (%u KB) in %u ms, %d skipped, SDRAM free %d KB",
+                     k.loaded, k.bytes >> 10, k.ms, k.failed, sdram_get_free() >> 10);
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

@@ -9,6 +9,7 @@ tests/render_freak
 *.wav
 # ...except the grains starter bank, which the patch copies to the SD card
 !objects/grains_wav/*.wav
+!objects/kit_bb/*.wav
 docs/*.aux
 docs/*.log
 docs/*.fls
@@ -17,3 +18,5 @@ tests/run_grains
 tests/run_grains_ctl
 tests/render_bank
 tests/render_grains
+tests/run_groove
+tests/render_groove

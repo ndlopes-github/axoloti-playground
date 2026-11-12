@@ -1,0 +1,49 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="groove_mix" uuid="bd86a7f1-f808-4be6-abdb-6b113038df8d">
+      <sDescription>Mixer of the groove patch: drums and synth (dry and send), a tempo-synced stereo delay and the Elements reverb on the sends, the metronome click and the master volume, all set from the groove bus. 832 KB of SDRAM (2 s of delay per side, 64 KB of reverb).</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets>
+         <frac32buffer name="drumsl"/>
+         <frac32buffer name="drumsr"/>
+         <frac32buffer name="dsendl"/>
+         <frac32buffer name="dsendr"/>
+         <frac32buffer name="synthl"/>
+         <frac32buffer name="synthr"/>
+         <frac32buffer name="ssendl"/>
+         <frac32buffer name="ssendr"/>
+      </inlets>
+      <outlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/groove_mix.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::GrooveMix mix;
+elements::Reverb reverb;
+float in[8][BUFSIZE], l[BUFSIZE], r[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[float *ml = 0, *mr = 0;
+const int32_t dbytes = freak::kGrooveDelayLen * sizeof(float);
+if (sdram_get_free() > 2 * dbytes + 65536) {
+   ml = (float *)sdram_malloc(dbytes);
+   mr = (float *)sdram_malloc(dbytes);
+}
+uint16_t *rbuf = 0;
+if (sdram_get_free() > (int32_t)freak::kReverbBytes + 65536) rbuf = (uint16_t *)sdram_malloc(freak::kReverbBytes);
+if (rbuf) reverb.Init(rbuf);
+mix.init(ml, mr, rbuf ? &reverb : 0);]]></code.init>
+      <code.krate><![CDATA[const int32_t *src[8] = {inlet_drumsl, inlet_drumsr, inlet_dsendl, inlet_dsendr,
+                         inlet_synthl, inlet_synthr, inlet_ssendl, inlet_ssendr};
+for (int c = 0; c < 8; c++)
+   for (int i = 0; i < BUFSIZE; i++) in[c][i] = src[c][i] * (1.0f / (1 << 27));
+mix.process(freak::gbus_groove(), in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7], l, r);
+for (int i = 0; i < BUFSIZE; i++) {
+   outlet_l[i] = (int32_t)(l[i] * (1 << 27));
+   outlet_r[i] = (int32_t)(r[i] * (1 << 27));
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

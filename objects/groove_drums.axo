@@ -1,0 +1,30 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="groove_drums" uuid="6a916f69-0087-4ac3-9479-9ee3f1f39246">
+      <sDescription>Drum sampler of the groove patch: one voice per pad of the groove_kit kit, played by the hits on the groove bus (pads and the loop), with velocity, a fixed pan per pad, group levels and mutes, and a send. Closed hats choke the open hat.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+         <frac32buffer name="sendl"/>
+         <frac32buffer name="sendr"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/groove_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::Drums drm;
+float dl[BUFSIZE], dr[BUFSIZE], sl[BUFSIZE], sr[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[drm.init();]]></code.init>
+      <code.krate><![CDATA[freak::groove_drums_block(drm, freak::gbus_groove(), dl, dr, sl, sr);
+for (int i = 0; i < BUFSIZE; i++) {
+   outlet_l[i] = (int32_t)(dl[i] * (1 << 27));
+   outlet_r[i] = (int32_t)(dr[i] * (1 << 27));
+   outlet_sendl[i] = (int32_t)(sl[i] * (1 << 27));
+   outlet_sendr[i] = (int32_t)(sr[i] * (1 << 27));
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

@@ -1,5 +1,5 @@
 % Launchkey 49 MK3 overlays: label strips to print at actual size, cut out and
-% lay on the panel next to the controls. Page 1 freak, page 2 grains.
+% lay on the panel next to the controls. Page 1 freak, page 2 grains, page 3 groove.
 % Build: make overlays.  Labels come from lib/launchkey_ctl.h (freak) and
 % lib/grains_ctl.h (grains), as on the cheat sheets.
 %
@@ -186,6 +186,59 @@
   \tag{103}{40}{\FX{FX}\\\sm{left of pads, lower}}
   \tag{122}{50}{\GR{GRAIN} page\\\sm{round, upper}}
   \tag{122}{40}{HOLD\\\sm{round, lower}}
+
+  \placement{208}{165}
+  \ruler{8}{16}
+\end{tikzpicture}
+
+%======================================================================== groove
+\newpage
+\begin{tikzpicture}[x=1mm, y=1mm]
+  \useasboundingbox (0,0) rectangle (297,210);
+  \header{groove}{its own SD card \textperiodcentered{} looper: sampled drums + 4-voice chords}
+
+  \strip{8}{168}{8}{\kp}{12}{%
+    {WAVE\\\FX{TEMPO}}, {PWM\\\FX{SWING}}, {DETUNE\\\FX{DRUNK}}, {\textcolor{fltc}{CUTOFF}\\\FX{DLY TIME}},
+    {\textcolor{fltc}{RESO}\\\FX{DLY FDBK}}, {\textcolor{fltc}{ENV AMT}\\\FX{DLY LEVEL}},
+    {ATTACK\\\FX{REV LEVEL}}, {RELEASE\\\FX{REV TIME}}}%
+    {KNOBS \quad black = SYNTH page (Device Select) \quad \FX{blue = GROOVE page (Device Lock)}}
+
+  \strip{8}{145}{8}{\pp}{10}{%
+    {808 KICK\\\sm{boom bap}}, {707 SNARE\\\sm{boom bap dusty}}, {SNAP\\\sm{boom bap shuffle}}, {808 RIM\\\sm{boom bap jazzy}},
+    {909 HAT\\\sm{\textbf{broken beat}}}, {CONGA\\\sm{broken clap}}, {TOM\\\sm{broken 3-3-2}}, {RIDE\\\sm{broken swing}}}%
+    {PADS, TOP ROW: drums 9--16 \quad (small: the style, with STYLE held)}
+  \strip{8}{125}{8}{\pp}{10}{%
+    {KICK\\\sm{funk}}, {SNARE\\\sm{funk break}}, {GHOST\\\sm{electro funk}}, {CLAP\\\sm{funk shuffle}},
+    {HAT\\\sm{neo soul}}, {OPEN HAT\\\sm{neo soul slow}}, {RIM\\\sm{neo soul drag}}, {SHAKER\\\sm{neo soul triplet}}}%
+    {PADS, BOTTOM ROW: drums 1--8 \quad (press hard: 16th rolls)}
+
+  \strip{8}{103}{9}{\fp}{7}{%
+    \textcolor{modc}{KICK}, \textcolor{modc}{SNARE}, \textcolor{modc}{HATS}, \textcolor{modc}{PERC},
+    \textcolor{lfoc}{CHORDS}, \FX{D.SEND}, \FX{C.SEND}, \textcolor{lfoc}{DECAY}, VOL}%
+    {FADERS \quad \textcolor{modc}{drum groups} \quad \textcolor{lfoc}{chords} \quad \FX{effect sends}}
+  \strip{8}{83}{9}{\fp}{10}{%
+    {mute\\\sm{kick}}, {mute\\\sm{snare}}, {mute\\\sm{hats}}, {mute\\\sm{perc}}, {mute\\\sm{chords}},
+    {SUB}, {\textcolor{fltc}{VELO}\\\sm{\(\to\)cutoff}}, {CHORUS\\\sm{0/I/II/I+II}}, {NEXT\\\sm{preset}}}%
+    {FADER BUTTONS (press: toggle or next)}
+
+  \node[note, anchor=south west] at (8, 70) {TAGS, one per button};
+  \tag{8}{60}{\(\blacktriangleleft\) PRESET\\\sm{track \(\blacktriangleleft\)}}
+  \tag{27}{60}{PRESET \(\blacktriangleright\)\\\sm{track \(\blacktriangleright\)}}
+  \tag{46}{60}{SYNTH\\\sm{Device Select}}
+  \tag{65}{60}{\FX{GROOVE}\\\sm{Device Lock}}
+  \tag{84}{60}{BEND \(\pm\)2 st\\\sm{pitch wheel}}
+  \tag{103}{60}{VIBRATO\\\sm{mod wheel}}
+  \tag{8}{50}{\GR{CAPTURE}\\\sm{Capture MIDI}}
+  \tag{27}{50}{\GR{QUANTISE}\\\sm{Quantise}}
+  \tag{46}{50}{\GR{CLICK}\\\sm{Click}}
+  \tag{65}{50}{\GR{UNDO}/redo\\\sm{Undo}}
+  \tag{8}{40}{\GR{PLAY}\\\sm{Play}}
+  \tag{27}{40}{\GR{STOP}\\\sm{Stop}}
+  \tag{46}{40}{\GR{RECORD}\\\sm{Record}}
+  \tag{103}{50}{SYNTH\\\sm{left of pads, upper}}
+  \tag{103}{40}{\FX{GROOVE}\\\sm{left of pads, lower}}
+  \tag{122}{50}{\GR{STYLE} (hold)\\\sm{round, upper}}
+  \tag{122}{40}{\textcolor{modc}{ERASE} (hold)\\\sm{round, lower}}
 
   \placement{208}{165}
   \ruler{8}{16}

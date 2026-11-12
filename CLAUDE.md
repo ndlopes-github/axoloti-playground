@@ -95,6 +95,19 @@ measurements.
   freak in flash. The board boots the SD one when a card is in, so pulling the
   card always recovers freak.
 
+- groove (third patch, its own SD card): Nuno asked for drums and a broken-beat
+  groove for this patch (2026-11-11), so the "no drums / no genre framing"
+  rules above apply to freak and grains, not to groove. Kit: CC0 only (the repo
+  is public); `tools/make_kit.sh` pins the source commits. Nuno found the
+  acoustic kit too reverby: the kit is drum machines only (dry), and the 16
+  styles are funk, neo-soul, boom-bap and broken beat, 4 each, each with its
+  own pads, tempo, swing and drunk. The loop is always 4 bars: Nuno asked
+  (a length button with no display is guesswork). The hub drains
+  MIDI from a ring in `tick()`, so the looper state has one writer. The
+  sequencer and controller are at -Os (SRAM1 32 KB); per-sample code stays
+  at -O3. DSP on the board: 46.5 % idle, 80.5 % with beat + 4-voice chord.
+  `make render_groove` with mode `tour` renders every style for one lap.
+
 ## Open items
 
 - SD card: holds grains (`/start.bin`, `/grains/01..08.wav`). Standalone boot

@@ -1,0 +1,83 @@
+<patch-1.0 appVersion="1.1.0">
+  <obj type="groove_ctl" uuid="fdc114e9-16c7-4954-a25d-c1d69ff65f2d" name="ctl" x="14" y="14">
+    <params/>
+    <attribs>
+      <combo attributeName="autoplay" selection="off"/>
+    </attribs>
+  </obj>
+  <obj type="groove_kit" uuid="782f5324-896e-475b-ab45-eefac314c710" name="kit" x="14" y="98">
+    <params/>
+    <attribs/>
+  </obj>
+  <obj type="groove_drums" uuid="6a916f69-0087-4ac3-9479-9ee3f1f39246" name="drums" x="14" y="168">
+    <params/>
+    <attribs/>
+  </obj>
+  <obj type="groove_mix" uuid="bd86a7f1-f808-4be6-abdb-6b113038df8d" name="mix" x="210" y="168">
+    <params/>
+    <attribs/>
+  </obj>
+  <obj type="audio/out stereo" uuid="a1ca7a567f535acc21055669829101d3ee7f0189" name="out stereo_1" x="406" y="168">
+    <params/>
+    <attribs/>
+  </obj>
+  <obj type="groove_synth" uuid="ce2d49c8-2cb6-4fe9-bb94-8a37590c0073" name="synth" x="14" y="308">
+    <params/>
+    <attribs/>
+  </obj>
+  <nets>
+    <net>
+      <source obj="drums" outlet="l"/>
+      <dest obj="mix" inlet="drumsl"/>
+    </net>
+    <net>
+      <source obj="drums" outlet="r"/>
+      <dest obj="mix" inlet="drumsr"/>
+    </net>
+    <net>
+      <source obj="drums" outlet="sendl"/>
+      <dest obj="mix" inlet="dsendl"/>
+    </net>
+    <net>
+      <source obj="drums" outlet="sendr"/>
+      <dest obj="mix" inlet="dsendr"/>
+    </net>
+    <net>
+      <source obj="synth" outlet="l"/>
+      <dest obj="mix" inlet="synthl"/>
+    </net>
+    <net>
+      <source obj="synth" outlet="r"/>
+      <dest obj="mix" inlet="synthr"/>
+    </net>
+    <net>
+      <source obj="synth" outlet="sendl"/>
+      <dest obj="mix" inlet="ssendl"/>
+    </net>
+    <net>
+      <source obj="synth" outlet="sendr"/>
+      <dest obj="mix" inlet="ssendr"/>
+    </net>
+    <net>
+      <source obj="mix" outlet="l"/>
+      <dest obj="out stereo_1" inlet="left"/>
+    </net>
+    <net>
+      <source obj="mix" outlet="r"/>
+      <dest obj="out stereo_1" inlet="right"/>
+    </net>
+  </nets>
+  <settings>
+    <subpatchmode>no</subpatchmode>
+    <MidiChannel>1</MidiChannel>
+  </settings>
+  <notes><![CDATA[groove v1: a real-time looper of drums (pads, sampled kit) and chords (keys, 4-voice Juno/Prophet-style synth),
+with drums generated in 16 styles after apc-chord. groove_ctl (hub, Launchkey 49 MK3) -> groove_drums + groove_synth -> groove_mix
+(delay, Elements reverb, click, master). Kit: /kit/NN_name.wav (groove_kit). docs/groove_cheatsheet.pdf documents it.]]></notes>
+  <windowPos>
+    <x>676</x>
+    <y>1426</y>
+    <width>780</width>
+    <height>620</height>
+  </windowPos>
+</patch-1.0>
