@@ -131,6 +131,25 @@ measurements.
   - `./tests/render_soliton <dir> probe` and `patches/bench_soliton/probe_c3.axp`
     printed identical RMS, peak and zero-crossing numbers: host and board agree.
 
+- aeolian (fifth patch, 2026-11-12; not installed): a wind harp. Nuno asked
+  for "something wild, droning or ambient, out of the box"; I proposed and
+  built it. Eight waveguide strings, each driven by a van der Pol wake at the
+  Strouhal frequency (Facchinetti–de Langre wake-oscillator model, velocity
+  coupling normalised by the lift so the loop gain does not depend on U or d).
+  Lessons:
+  - A per-sample division, int/float conversions and member reloads made a
+    string cost 265 cycles per sample (104.5 % DSP). Locals, integer
+    indices with power-of-two buffers, a division-free damping polynomial and
+    round-robin parameter updates: ~150 cycles, 75.5 %.
+  - The loss filter must be pitch-relative (kappa = T60 at 4 kHz / T60 of
+    the fundamental, b solved per string): a fixed b killed dark high strings.
+  - Gaussian draws for the wind interleaved with other draws from one
+    xorshift stream biased the gusts by 4 standard errors: separate
+    splitmix32 stream.
+  - The controller publishes every other tick; init() publishes too, and the
+    renderer mirrors the object's init + one tick, or the (chaotic) host and
+    board runs diverge. They then match to the digit.
+
 ## Open items
 
 - SD card: holds grains (`/start.bin`, `/grains/01..08.wav`). Standalone boot
@@ -140,6 +159,8 @@ measurements.
 - soliton: presets are set from the parameter meanings, not tuned by ear, and
   the patch is not installed (flash or a card: Nuno to choose; the patch
   switcher would put it on one card with grains and groove).
+- soliton: Nuno (2026-11-12): "the 4 engines sound similar but ok".
+- aeolian: presets not tuned by ear; not installed.
 - Next sound work: multimode filter, cycling envelope, LFO → timbre on the mod
   wheel, pitch bend, pad LEDs through the DAW port.
 - Plaits port (speech, modal and chord engines): ≈36 KB code + 12 KB tables

@@ -6,12 +6,13 @@ CXXFLAGS = -std=c++11 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined
 
 all: test tools/axo_dfu
 
-test: tests/run_tests tests/run_grains tests/run_grains_ctl tests/run_groove tests/run_soliton
+test: tests/run_tests tests/run_grains tests/run_grains_ctl tests/run_groove tests/run_soliton tests/run_aeolian
 	./tests/run_tests
 	./tests/run_grains
 	./tests/run_grains_ctl
 	./tests/run_groove
 	./tests/run_soliton
+	./tests/run_aeolian
 
 tests/run_tests: tests/test_freak.cpp lib/freak_dsp.h lib/launchkey_ctl.h
 	$(CXX) $(CXXFLAGS) -o $@ $<
@@ -30,10 +31,15 @@ SOLITON_DEPS = lib/soliton_voice.h lib/soliton_ctl.h lib/soliton_field.h lib/pde
 tests/run_soliton: tests/test_soliton.cpp $(SOLITON_DEPS)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
+AEOLIAN_DEPS = lib/aeolian_ctl.h lib/aeolian_harp.h lib/launchkey_ctl.h lib/freak_dsp.h
+
+tests/run_aeolian: tests/test_aeolian.cpp $(AEOLIAN_DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
 tools/axo_dfu: tools/axo_dfu.c
 	$(CC) -O2 -Wall -o $@ $< -l:libusb-1.0.so.0
 
-cheatsheet: docs/cheatsheet.pdf docs/grains_cheatsheet.pdf docs/groove_cheatsheet.pdf docs/soliton_cheatsheet.pdf
+cheatsheet: docs/cheatsheet.pdf docs/grains_cheatsheet.pdf docs/groove_cheatsheet.pdf docs/soliton_cheatsheet.pdf docs/aeolian_cheatsheet.pdf
 
 # Panel overlays for the Launchkey (print at actual size, cut out)
 overlays: docs/overlays.pdf
@@ -108,3 +114,16 @@ tests/render_soliton: tests/render_soliton.cpp $(SOLITON_DEPS)
 
 docs/soliton_cheatsheet.pdf: docs/soliton_cheatsheet.tex
 	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error soliton_cheatsheet.tex >/dev/null && latexmk -c soliton_cheatsheet.tex >/dev/null
+
+# Host render of the aeolian presets (dry): make render_aeolian &&
+#   ./tests/render_aeolian <out dir>          one stereo WAV per preset, 20 s
+#   ./tests/render_aeolian <out dir> probe    the numbers dev/probe logs on the board
+render_aeolian: tests/render_aeolian
+
+tests/render_aeolian: tests/render_aeolian.cpp $(AEOLIAN_DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+.PHONY: render_aeolian
+
+docs/aeolian_cheatsheet.pdf: docs/aeolian_cheatsheet.tex
+	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error aeolian_cheatsheet.tex >/dev/null && latexmk -c aeolian_cheatsheet.tex >/dev/null

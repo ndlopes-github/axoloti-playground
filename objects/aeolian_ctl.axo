@@ -1,0 +1,90 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="aeolian_ctl" uuid="3ee1028d-66d7-409b-81b3-5a652da3b404">
+      <sDescription>Launchkey 49 MK3 control hub for the aeolian wind harp: keys tune the eight strings, faders set their diameters, knobs set the wind, its gusts, the coupling and the strings' ring (SOUND page) and delay and reverb (FX page); pads are presets and wind gestures; transport picks the weather. It publishes the settings on the buses that aeolian_harp, fx_delay_st and fx_reverb read. The mapping lives in lib/aeolian_ctl.h; docs/aeolian_cheatsheet.pdf documents it. Use one per patch.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32.positive name="master" description="gain for gain/vca, 64 = unity"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="startpreset">
+            <MenuEntries>
+               <string>0 breeze</string>
+               <string>1 still air</string>
+               <string>2 gale</string>
+               <string>3 weather</string>
+               <string>4 fifths tower</string>
+               <string>5 glass strings</string>
+               <string>6 low cables</string>
+               <string>7 chord field</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+               <string>2</string>
+               <string>3</string>
+               <string>4</string>
+               <string>5</string>
+               <string>6</string>
+               <string>7</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../lib/aeolian_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::AeolianCtl ac;]]></code.declaration>
+      <code.init><![CDATA[ac.init();
+if (attr_startpreset) ac.apply_preset(attr_startpreset);  // test aid for -runTest
+ac.tick();]]></code.init>
+      <code.krate><![CDATA[ac.tick();
+// Events to the patcher log, at most one per 64 ticks (the log keeps one
+// message per burst). No-op when no patcher is connected.
+if ((ac.ticks & 63) == 0) {
+   freak::Event e;
+   if (ac.pop_event(e)) {
+      static const char *const page[2] = {"SOUND", "FX"};
+      switch (e.type) {
+      case freak::EV_PAGE:
+         LogTextMessage("aeolian: knob page %s (CC %d)", page[e.a % 2], e.b);
+         break;
+      case freak::EV_RESET:
+         LogTextMessage("aeolian: reset to the power-on sound");
+         break;
+      case freak::EV_PRESET:
+         LogTextMessage("aeolian: preset %d %s", e.a, freak::kAeoPresets[e.a % freak::kNumAeoPresets].name);
+         break;
+      case freak::EV_DICE:
+         LogTextMessage("aeolian: dice, %s, %s", freak::kTuningNames[e.a % freak::NUM_TUNINGS], freak::kWeatherNames[e.b % freak::NUM_WEATHER]);
+         break;
+      case freak::EV_TUNING:
+         LogTextMessage("aeolian: tuning %s", freak::kTuningNames[e.a % freak::NUM_TUNINGS]);
+         break;
+      case freak::EV_WEATHER:
+         LogTextMessage("aeolian: weather %s", freak::kWeatherNames[e.a % freak::NUM_WEATHER]);
+         break;
+      case freak::EV_FREEZE_WIND:
+         LogTextMessage("aeolian: wind %s", e.a ? "held" : "free");
+         break;
+      case freak::EV_STRING:
+         LogTextMessage("aeolian: string %d %s", e.a + 1, e.b ? "on" : "off");
+         break;
+      case freak::EV_PICKED:
+         if (e.a == freak::kPickedFader)
+            LogTextMessage("aeolian: fader %d caught up at %d", e.b + 1, e.c);
+         else
+            LogTextMessage("aeolian: knob %d caught up on page %s at %d", e.b + 1, page[e.a % 2], e.c);
+         break;
+      case freak::EV_UNMAPPED:
+         LogTextMessage("aeolian: unmapped CC %d on ch %d (value %d)", e.b, e.a, e.c);
+         break;
+      }
+   }
+}
+outlet_master = (int32_t)(freak::bus().master * (1 << 27));]]></code.krate>
+      <code.midihandler><![CDATA[ac.midi(status, data1, data2);]]></code.midihandler>
+   </obj.normal>
+</objdefs>

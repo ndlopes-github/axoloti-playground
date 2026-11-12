@@ -1,0 +1,45 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="aeolian_cycles" uuid="5f0c2e1a-8b7d-4e3f-a6c9-2d1b0e9f8a74">
+      <sDescription>Development aid: CPU cycles (DWT cycle counter) of the aeolian harp's control tick, one string's 16 samples, and the whole render. One line to the patcher log, for -runTest.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../../lib/aeolian_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::AeolianCtl ac;
+freak::Harp harp;
+float l[16], r[16];
+uint32_t blocks, c_tick, c_str, c_render, c_ctl;]]></code.declaration>
+      <code.init><![CDATA[CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+ac.init();
+harp.init();
+blocks = c_tick = c_str = c_render = c_ctl = 0;]]></code.init>
+      <code.krate><![CDATA[blocks++;
+if (blocks < 1400) {
+   uint32_t t0 = DWT->CYCCNT;
+   ac.tick();
+   uint32_t d = DWT->CYCCNT - t0; if (d > c_ctl) c_ctl = d;
+   t0 = DWT->CYCCNT;
+   harp.tick(freak::aeobus());
+   d = DWT->CYCCNT - t0; if (d > c_tick) c_tick = d;
+   if ((blocks & 1) == 0) {
+      for (int i = 0; i < 16; i++) l[i] = r[i] = 0.0f;
+      t0 = DWT->CYCCNT;
+      harp.st[0].process(l, r, 16, harp.rng);
+      d = DWT->CYCCNT - t0; if (d > c_str) c_str = d;
+   } else {
+      t0 = DWT->CYCCNT;
+      harp.render(freak::aeobus(), l, r);
+      d = DWT->CYCCNT - t0; if (d > c_render) c_render = d;
+   }
+}
+if (blocks == 1500)
+   LogTextMessage("aeolian cycles (max): ctl tick %d | harp tick %d | one string, 16 samples %d | render %d", c_ctl, c_tick, c_str, c_render);]]></code.krate>
+   </obj.normal>
+</objdefs>

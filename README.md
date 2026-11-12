@@ -48,6 +48,17 @@ layout plus a FIELD knob page. See
 [`docs/soliton_cheatsheet.pdf`](docs/soliton_cheatsheet.pdf) and the
 numerics in `lib/soliton_field.h`. It is not installed anywhere yet.
 
+**`patches/aeolian/aeolian_v1.axp`** is the fifth patch: a wind harp. Eight
+waveguide strings are never played directly; a wind blows across them. Each
+string sheds vortices at the Strouhal frequency 0.2 U/d, modelled as a van der
+Pol wake oscillator coupled to the string (vortex-induced vibration); near one
+of the string's harmonics the wake locks in and that harmonic sings. The wind
+is steady, gusty (Ornstein–Uhlenbeck) or chaotic (Lorenz-63). The keys tune
+the harp (unison, harmonic series, fifths, chord), the faders set the eight
+string diameters, the pads are gusts, calm, storm, pluck and mute. See
+[`docs/aeolian_cheatsheet.pdf`](docs/aeolian_cheatsheet.pdf) and the model in
+`lib/aeolian_harp.h`. Not installed anywhere yet.
+
 ## Hardware and software
 
 - Axoloti Core (original board), running **Ksoloti Patcher 1.1.0** in Firmware
@@ -97,6 +108,8 @@ numerics in `lib/soliton_field.h`. It is not installed anywhere yet.
 | `lib/soliton_ctl.h`, `lib/soliton_voice.h`, `objects/soliton_*.axo` | The soliton mapping (three knob pages, engines, time pads, presets), its voice (field, SVF, envelopes) and objects. The mapping is the single source of truth for the soliton cheat sheet. |
 | `tests/test_soliton.cpp`, `tests/render_soliton.cpp` | Tests against exact results (FFT vs DFT, KdV energy, Burgers slope vs characteristics, KS and NLS growth rates vs linear theory, resolution over the knob range, rewind, mapping, voice bounds) and a preset renderer (`make render_soliton`), whose `probe` mode prints what `objects/dev/probe.axo` logs on the board. |
 | `objects/dev/soliton_cycles*.axo`, `patches/bench_soliton/` | Cycle counts of the solver's pieces on the board (DWT counter) and the DSP-load benchmarks. |
+| `lib/aeolian_harp.h`, `lib/aeolian_ctl.h`, `objects/aeolian_*.axo` | The wind harp: waveguide strings tuned exactly (the loss filter's phase delay compensated), van der Pol wakes at the Strouhal frequency with lock-in, OU and Lorenz wind, sound box and level control; its Launchkey mapping (the single source of truth for the aeolian cheat sheet) and objects. |
+| `tests/test_aeolian.cpp`, `tests/render_aeolian.cpp`, `objects/dev/aeolian_cycles.axo` | Tests against exact results (tuning, ring time, the van der Pol limit cycle at the Strouhal frequency, lock-in and its hysteresis, the gusts' statistics, bounds, mapping), a preset renderer (`make render_aeolian`, with a `probe` mode), and cycle counts on the board. |
 | `tests/test_freak.cpp` | Host unit tests (`make test`, with ASan/UBSan). |
 | `objects/launchkey_ctl.axo`, `freak_voice.axo`, `fx_delay.axo` | The synth's objects: control hub, one voice, delay. They talk through the control bus, not through wires. |
 | `objects/braids_osc.axo` | Stand-alone Braids digital macro-oscillator, with inlets: pitch, trig (strike), timbre, colour, shape and `shapecv`. |
@@ -128,6 +141,8 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
 | 3 soliton voices + delay + reverb, all sounding (`bench_soliton`) | 61.5–68.5 % (89–90.5 % before the voices took turns) | 35.9 KB |
 | soliton field, one work item (cycles, worst of ~1300, interrupts included) | 4,600–12,900 cycles | |
 | 128-point real FFT / complex FFT (CMSIS radix 8, firmware bit reversal) | 5,700 / 9,300 cycles (radix 2 before: 14,000 / 22,000) | |
+| `aeolian_v1` (8 strings, stereo delay, reverb), constant | 75.5 % (104.5 % before the string loop was rewritten) | 20.8 KB |
+| aeolian string, per sample (board) | ~150 cycles (265 at first: a division, int/float conversions and member reloads per sample) | |
 | grains bank load from SD (8 files, 3000 KB, background thread) | 1.06 s (2.8 MB/s) | |
 | Elements reverb / diffuser / string / tube | 19.5 / 7.5 / 5 / 4.5 % | ~0 (code in firmware) |
 | Warps | 46 % | ~0 |

@@ -1,0 +1,27 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="aeolian_harp" uuid="d0cf2c5c-3006-4dff-abf8-3517db65bd2e">
+      <sDescription>The aeolian wind harp: eight waveguide strings, each driven by a van der Pol wake oscillator at its Strouhal frequency 0.2 U/d (vortex-induced vibration, with lock-in to the string's harmonics), in a steady, gusty (Ornstein-Uhlenbeck) or chaotic (Lorenz) wind; a sound box, DC blocker and slow level control. Stereo out. Settings come from the aeolian_ctl bus, so it only works next to one. The code is lib/aeolian_harp.h, shared with the host renderer.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/aeolian_harp.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::Harp harp;  // the strings' delay lines: 36 KB, in bss (CCM)
+float l[BUFSIZE], r[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[harp.init();]]></code.init>
+      <code.krate><![CDATA[harp.tick(freak::aeobus());
+harp.render(freak::aeobus(), l, r);
+for (int i = 0; i < BUFSIZE; i++) {
+   outlet_l[i] = (int32_t)(l[i] * (1 << 27));
+   outlet_r[i] = (int32_t)(r[i] * (1 << 27));
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

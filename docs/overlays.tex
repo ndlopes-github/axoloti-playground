@@ -1,9 +1,9 @@
 % Launchkey 49 MK3 overlays: label strips to print at actual size, cut out and
 % lay on the panel next to the controls. Page 1 freak, page 2 grains, page 3 groove,
-% page 4 soliton.
+% page 4 soliton, page 5 aeolian.
 % Build: make overlays.  Labels come from lib/launchkey_ctl.h (freak),
-% lib/grains_ctl.h (grains), lib/groove_ctl.h (groove) and lib/soliton_ctl.h
-% (soliton), as on the cheat sheets.
+% lib/grains_ctl.h (grains), lib/groove_ctl.h (groove), lib/soliton_ctl.h
+% (soliton) and lib/aeolian_ctl.h (aeolian), as on the cheat sheets.
 %
 % Spacing: the centre-to-centre distances below are NOT measured (Novation
 % publishes no panel drawing). Each strip is divided into one cell per
@@ -294,6 +294,56 @@
   \tag{103}{50}{SOUND\\\sm{left of pads, upper}}
   \tag{103}{40}{\FX{FX}\\\sm{left of pads, lower}}
   \tag{122}{50}{\GR{FIELD} page\\\sm{round, upper}}
+
+  \placement{208}{165}
+  \ruler{8}{16}
+\end{tikzpicture}
+
+%======================================================================== aeolian
+\newpage
+\begin{tikzpicture}[x=1mm, y=1mm]
+  \useasboundingbox (0,0) rectangle (297,210);
+  \header{aeolian}{a wind harp: eight strings, the wind plays them}
+
+  \strip{8}{168}{8}{\kp}{12}{%
+    {\GR{WIND}\\\FX{GLIDE}}, {\GR{GUSTS}\\\FX{DLY TIME}}, {\GR{GUST TIME}\\\FX{DLY FDBK}}, {COUPLING\\\FX{DLY MIX}},
+    {\textcolor{modc}{RING}\\\FX{REV AMT}}, {\textcolor{modc}{BRIGHT}\\\FX{REV TIME}}, {\GR{AIR}\\\FX{REV DIFF}}, {BODY\\\FX{REV LP}}}%
+    {KNOBS \quad black = SOUND (Device Select) \quad \FX{blue = FX (Device Lock)}}
+
+  \strip{8}{145}{8}{\pp}{10}{%
+    {\sm{0}\\breeze}, {\sm{1}\\still air}, {\sm{2}\\gale}, {\sm{3}\\weather}, {\sm{4}\\fifths tower}, {\sm{5}\\glass strings},
+    {\sm{6}\\low cables}, {\sm{7}\\chord field}}%
+    {PADS, TOP ROW: presets}
+  \strip{8}{125}{8}{\pp}{10}{%
+    {\GR{GUST}\\\sm{wind \(\times\)2.5}}, {\GR{CALM}\\\sm{wind to 0}}, {\GR{STORM}\\\sm{gusts up}}, {\textcolor{modc}{PLUCK}\\\sm{all strings}},
+    {\textcolor{modc}{MUTE}\\\sm{hand on strings}}, {\textcolor{modc}{SLACK}\\\sm{down 2 st}}, {\FX{THROW}\\\sm{delay}}, {\FX{SWELL}\\\sm{reverb}}}%
+    {PADS, BOTTOM ROW: wind and hands, while held (pressure = amount)}
+
+  \strip{8}{103}{9}{\fp}{7}{%
+    \textcolor{modc}{string 1}, \textcolor{modc}{string 2}, \textcolor{modc}{string 3}, \textcolor{modc}{string 4},
+    \textcolor{modc}{string 5}, \textcolor{modc}{string 6}, \textcolor{modc}{string 7}, \textcolor{modc}{string 8}, VOL}%
+    {FADERS \quad \textcolor{modc}{string diameters, 0.25 -- 3 mm (up = thicker = lower shedding)}}
+  \strip{8}{83}{9}{\fp}{10}{%
+    {on/off\\\sm{string 1}}, {on/off\\\sm{string 2}}, {on/off\\\sm{string 3}}, {on/off\\\sm{string 4}}, {on/off\\\sm{string 5}},
+    {on/off\\\sm{string 6}}, {on/off\\\sm{string 7}}, {on/off\\\sm{string 8}}, {NEXT\\\sm{preset}}}%
+    {FADER BUTTONS (press: toggle or next)}
+
+  \node[note, anchor=south west] at (8, 70) {TAGS, one per button};
+  \tag{8}{60}{\(\blacktriangleleft\) \textcolor{modc}{TUNING}\\\sm{track \(\blacktriangleleft\)}}
+  \tag{27}{60}{\textcolor{modc}{TUNING} \(\blacktriangleright\)\\\sm{track \(\blacktriangleright\)}}
+  \tag{46}{60}{SOUND\\\sm{Device Select}}
+  \tag{65}{60}{\FX{FX}\\\sm{Device Lock}}
+  \tag{84}{60}{TENSION \(\pm\)2\\\sm{pitch wheel}}
+  \tag{103}{60}{\GR{WIND} \(\times\)2\\\sm{mod wheel}}
+  \tag{8}{50}{\textcolor{lfoc}{DICE}\\\sm{Capture MIDI}}
+  \tag{27}{50}{\GR{HOLD WIND}\\\sm{Quantise}}
+  \tag{46}{50}{\textcolor{modc}{PLUCK ALL}\\\sm{Click}}
+  \tag{65}{50}{RESET\\\sm{Undo}}
+  \tag{8}{40}{\textcolor{lfoc}{STEADY}\\\sm{Play}}
+  \tag{27}{40}{\textcolor{lfoc}{GUSTY}\\\sm{Stop}}
+  \tag{46}{40}{\textcolor{lfoc}{LORENZ}\\\sm{Record}}
+  \tag{103}{50}{SOUND\\\sm{left of pads, upper}}
+  \tag{103}{40}{\FX{FX}\\\sm{left of pads, lower}}
 
   \placement{208}{165}
   \ruler{8}{16}

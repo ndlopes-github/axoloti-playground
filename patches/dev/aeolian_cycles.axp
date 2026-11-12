@@ -1,0 +1,11 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="dev/aeolian_cycles" name="cyc" x="14" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets/>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+   </settings>
+   <notes><![CDATA[Cycle counts of the aeolian harp, logged once.]]></notes>
+</patch-1.0>
