@@ -1,0 +1,11 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="patch_switch" name="switch" x="14" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets/>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+   </settings>
+   <notes><![CDATA[The patch switcher alone: send it the gesture over USB MIDI (amidi) during -runTest; the log shows what it does.]]></notes>
+</patch-1.0>

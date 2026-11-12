@@ -24,3 +24,4 @@ tests/run_soliton
 tests/render_soliton
 tests/run_aeolian
 tests/render_aeolian
+tests/run_switch

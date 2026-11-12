@@ -1,0 +1,25 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="load_test" uuid="e3c7a915-2b4d-4f86-8a1e-7d5c0b9f6a42">
+      <sDescription>Development aid: 0.2 s after start, checks /start.bin with f_stat and loads it with LoadPatch, from k-rate code, the way objects/patch_switch.axo does. Tests the firmware's load by file name (its source marks that path untested).</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <code.declaration><![CDATA[uint32_t blocks;]]></code.declaration>
+      <code.init><![CDATA[blocks = 0;]]></code.init>
+      <code.krate><![CDATA[if (++blocks == 600) {
+   FILINFO fi;
+   fi.lfname = 0;
+   fi.lfsize = 0;
+   if (f_stat("/start.bin", &fi) == FR_OK) {
+      LogTextMessage("load_test: loading /start.bin (%d bytes)", (int)fi.fsize);
+      LoadPatch("/start.bin");
+   } else {
+      LogTextMessage("load_test: no /start.bin");
+   }
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

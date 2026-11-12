@@ -5,6 +5,10 @@
          <combo attributeName="startpreset" selection="0 breeze"/>
       </attribs>
    </obj>
+   <obj type="patch_switch" name="switch" x="196" y="14">
+      <params/>
+      <attribs/>
+   </obj>
    <obj type="aeolian_harp" name="voice" x="14" y="196">
       <params/>
       <attribs/>

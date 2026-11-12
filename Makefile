@@ -6,13 +6,14 @@ CXXFLAGS = -std=c++11 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined
 
 all: test tools/axo_dfu
 
-test: tests/run_tests tests/run_grains tests/run_grains_ctl tests/run_groove tests/run_soliton tests/run_aeolian
+test: tests/run_tests tests/run_grains tests/run_grains_ctl tests/run_groove tests/run_soliton tests/run_aeolian tests/run_switch
 	./tests/run_tests
 	./tests/run_grains
 	./tests/run_grains_ctl
 	./tests/run_groove
 	./tests/run_soliton
 	./tests/run_aeolian
+	./tests/run_switch
 
 tests/run_tests: tests/test_freak.cpp lib/freak_dsp.h lib/launchkey_ctl.h
 	$(CXX) $(CXXFLAGS) -o $@ $<
@@ -34,6 +35,9 @@ tests/run_soliton: tests/test_soliton.cpp $(SOLITON_DEPS)
 AEOLIAN_DEPS = lib/aeolian_ctl.h lib/aeolian_harp.h lib/launchkey_ctl.h lib/freak_dsp.h
 
 tests/run_aeolian: tests/test_aeolian.cpp $(AEOLIAN_DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+tests/run_switch: tests/test_switch.cpp lib/patch_switch.h
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 tools/axo_dfu: tools/axo_dfu.c

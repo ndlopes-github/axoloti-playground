@@ -150,6 +150,21 @@ measurements.
     renderer mirrors the object's init + one tick, or the (chaotic) host and
     board runs diverge. They then match to the digit.
 
+- patch switcher (2026-11-12, Nuno's request): `objects/patch_switch.axo` in
+  all five patches; Device Select + Device Lock together, then top pad 1-5
+  (freak, grains, groove, soliton, aeolian) loads `/<name>_v1/patch.bin`
+  with the firmware's `LoadPatch` ("Upload to SD Card" writes exactly
+  that path, per the patcher's source in Ksoloti.jar `main/java`).
+  - **Never touch the SD card (or LogTextMessage) in a MIDI handler**: those
+    threads have 256-byte stacks, FatFs LFN needs 512 bytes of stack. It
+    hung the board; the k-rate code does it now.
+  - Load by file name (marked "TODO: must test!!" in the firmware) works:
+    `/start.bin` loaded from k-rate code, grains came up with its bank.
+  - Laptop MIDI reaches a running patch: `amidi -p hw:1,0,0 -S "BF 33 7F ..."`
+    during `-runTest` (port "Axoloti Core Axoloti MIDI").
+  - The card in the board also holds Nuno's other Axoloti material; only
+    add files, never rename or delete without asking.
+
 ## Open items
 
 - SD card: holds grains (`/start.bin`, `/grains/01..08.wav`). Standalone boot
@@ -161,6 +176,9 @@ measurements.
   switcher would put it on one card with grains and groove).
 - soliton: Nuno (2026-11-12): "the 4 engines sound similar but ok".
 - aeolian: presets not tuned by ear; not installed.
+- Patch switcher: works on the Launchkey (Nuno, 2026-11-12). The five patches
+  are on the card (/<name>_v1/patch.bin); /start.bin must be a patch that
+  contains the switcher (Upload to SD Card as Startup), or nothing switches.
 - Next sound work: multimode filter, cycling envelope, LFO → timbre on the mod
   wheel, pitch bend, pad LEDs through the DAW port.
 - Plaits port (speech, modal and chord engines): ≈36 KB code + 12 KB tables

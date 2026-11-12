@@ -5,6 +5,10 @@
       <combo attributeName="autoplay" selection="off"/>
     </attribs>
   </obj>
+  <obj type="patch_switch" name="switch" x="210" y="14">
+    <params/>
+    <attribs/>
+  </obj>
   <obj type="groove_kit" uuid="782f5324-896e-475b-ab45-eefac314c710" name="kit" x="14" y="98">
     <params/>
     <attribs/>

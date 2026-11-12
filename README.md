@@ -59,6 +59,20 @@ string diameters, the pads are gusts, calm, storm, pluck and mute. See
 [`docs/aeolian_cheatsheet.pdf`](docs/aeolian_cheatsheet.pdf) and the model in
 `lib/aeolian_harp.h`. Not installed anywhere yet.
 
+## Switching patches (one SD card)
+
+Every patch carries `objects/patch_switch.axo`. To change patch, press
+**Device Select and Device Lock together, then a top pad within 3 s**:
+pad 1 freak, 2 grains, 3 groove, 4 soliton, 5 aeolian. The switcher loads
+`/<name>_v1/patch.bin` from the card with the firmware's `LoadPatch` (no
+firmware change). A patch that is not on the card is logged and ignored.
+
+To install: open each of the five patches in the patcher and use *Upload to
+SD Card*. That writes `/<name>_v1/patch.bin` and the samples the patch needs
+(`/grains`, `/kit`) and touches nothing else. Then use *Upload to SD Card as
+Startup* on the one that should start when the card is in (`/start.bin`).
+Without a card, the board starts freak from flash, as before.
+
 ## Hardware and software
 
 - Axoloti Core (original board), running **Ksoloti Patcher 1.1.0** in Firmware
@@ -110,6 +124,8 @@ string diameters, the pads are gusts, calm, storm, pluck and mute. See
 | `objects/dev/soliton_cycles*.axo`, `patches/bench_soliton/` | Cycle counts of the solver's pieces on the board (DWT counter) and the DSP-load benchmarks. |
 | `lib/aeolian_harp.h`, `lib/aeolian_ctl.h`, `objects/aeolian_*.axo` | The wind harp: waveguide strings tuned exactly (the loss filter's phase delay compensated), van der Pol wakes at the Strouhal frequency with lock-in, OU and Lorenz wind, sound box and level control; its Launchkey mapping (the single source of truth for the aeolian cheat sheet) and objects. |
 | `tests/test_aeolian.cpp`, `tests/render_aeolian.cpp`, `objects/dev/aeolian_cycles.axo` | Tests against exact results (tuning, ring time, the van der Pol limit cycle at the Strouhal frequency, lock-in and its hysteresis, the gusts' statistics, bounds, mapping), a preset renderer (`make render_aeolian`, with a `probe` mode), and cycle counts on the board. |
+| `lib/patch_switch.h`, `objects/patch_switch.axo`, `tests/test_switch.cpp` | The patch switcher (in every patch): the Device Select + Device Lock + top pad gesture, tested on the host; the object checks the card and calls the firmware's `LoadPatch` from k-rate code. |
+| `objects/dev/sd_list.axo`, `load_test.axo`, `patches/dev/switch_test.axp` | Read-only card listing, a load-by-file-name test, and the switcher alone (send it the gesture over USB MIDI with `amidi` during `-runTest`). |
 | `tests/test_freak.cpp` | Host unit tests (`make test`, with ASan/UBSan). |
 | `objects/launchkey_ctl.axo`, `freak_voice.axo`, `fx_delay.axo` | The synth's objects: control hub, one voice, delay. They talk through the control bus, not through wires. |
 | `objects/braids_osc.axo` | Stand-alone Braids digital macro-oscillator, with inlets: pitch, trig (strike), timbre, colour, shape and `shapecv`. |
@@ -150,6 +166,12 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
 
 ## Notes and pitfalls
 
+- **No SD card access, and no logging, in a MIDI handler.** The MIDI handlers
+  run in firmware threads with 256-byte stacks (USB device MIDI, serial
+  MIDI), and FatFs puts a 512-byte long-file-name buffer on the caller's
+  stack (`_USE_LFN 2`). An `f_stat` in `patch_switch`'s first MIDI handler
+  hung the board. The handler now only records the request; the k-rate code
+  (DSP thread, 7.3 KB of stack) does the card access and `LoadPatch`.
 - **Objects used in polyphonic subpatches must be trivially destructible.** A
   member with a user-provided destructor made the generated voice array
   register its destructor with newlib's `atexit()`, and that patch hung the

@@ -1,0 +1,48 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="sd_list" uuid="b8f1d2c4-6a3e-4f5b-9c7d-2e1a0f9b8c63">
+      <sDescription>Development aid, read-only: lists the SD card's root and the patch folders /grains_v1 and /groove_v1, then checks the patch switcher's slots (f_stat). One line to the patcher log every 40 blocks, for -runTest. It reads the card in the DSP thread: not for a playing patch.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../../lib/patch_switch.h</include>
+      </includes>
+      <code.declaration><![CDATA[uint32_t blocks;
+int phase, slot, dirn;
+DIR dir;
+bool open;]]></code.declaration>
+      <code.init><![CDATA[blocks = 0; phase = 0; slot = 0; dirn = 0; open = false;]]></code.init>
+      <code.krate><![CDATA[static const char *const dirs[3] = {"/", "/grains_v1", "/groove_v1"};
+blocks++;
+if (blocks < 300 || (blocks % 40) != 0 || phase > 1) return;
+FILINFO fi;
+fi.lfname = 0;
+fi.lfsize = 0;
+if (phase == 0) {
+   const char *d = dirs[dirn];
+   if (!open) {
+      if (f_opendir(&dir, d) != FR_OK) {
+         LogTextMessage("sd: cannot open %s", d);
+         if (++dirn >= 3) phase = 1;
+         return;
+      }
+      open = true;
+   }
+   if (f_readdir(&dir, &fi) != FR_OK || fi.fname[0] == 0) {
+      LogTextMessage("sd: end of %s", d);
+      open = false;
+      if (++dirn >= 3) phase = 1;
+      return;
+   }
+   LogTextMessage("sd: %s %s %s %d", d, fi.fname, (fi.fattrib & AM_DIR) ? "dir" : "file", (int)fi.fsize);
+} else {
+   const FRESULT r = f_stat(freak::kSwitchSlots[slot], &fi);
+   LogTextMessage("sd: slot %d %s %s %d", slot + 1, freak::kSwitchSlots[slot], r == FR_OK ? "present" : "missing", r == FR_OK ? (int)fi.fsize : (int)r);
+   if (++slot >= freak::kNumSwitchSlots) phase = 2;
+}]]></code.krate>
+   </obj.normal>
+</objdefs>

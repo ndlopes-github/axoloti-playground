@@ -1,0 +1,11 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="dev/sd_list" name="ls" x="14" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets/>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+   </settings>
+   <notes><![CDATA[Read-only: lists the SD card's root and the patch switcher's slots in the patcher log.]]></notes>
+</patch-1.0>

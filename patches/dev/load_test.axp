@@ -1,0 +1,11 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="dev/load_test" name="load" x="14" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets/>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+   </settings>
+   <notes><![CDATA[Loads /start.bin by file name 0.2 s after start (tests the firmware's LoadPatch path).]]></notes>
+</patch-1.0>

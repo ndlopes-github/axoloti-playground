@@ -5,6 +5,10 @@
          <combo attributeName="autoplay" selection="off"/>
       </attribs>
    </obj>
+   <obj type="patch_switch" name="switch" x="196" y="14">
+      <params/>
+      <attribs/>
+   </obj>
    <obj type="grains_bank" name="bank" x="14" y="112">
       <params/>
       <attribs/>

@@ -3,6 +3,10 @@
       <params/>
       <attribs/>
    </obj>
+   <obj type="patch_switch" name="switch" x="196" y="14">
+      <params/>
+      <attribs/>
+   </obj>
    <patcher type="patch/patcher" name="voices" x="14" y="196">
       <params/>
       <attribs>
