@@ -1,0 +1,23 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="raw_voice" uuid="fb4ecfbd-004f-4d24-8bff-b4afff74703f">
+      <sDescription>The raw monosynth's voice, after the Korg MS-20: two band-limited VCOs (VCO1 triangle/saw/pulse/noise, VCO2 saw/square/narrow pulse/ring) and noise, a drive stage, a resonant high-pass and low-pass after the Korg-35 (zero-delay feedback, clipping in the feedback path, self-oscillating), the VCA, all at 96 kHz and decimated to 48 kHz; MG, EG1 and EG2. Mono out. Settings come from the raw_ctl bus, so it only works next to one. The code is lib/raw_voice.h, shared with the host tests and renderer.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32buffer name="out"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/raw_voice.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::RawVoice rv;
+float buf[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[rv.init();]]></code.init>
+      <code.krate><![CDATA[rv.render(freak::rawbus(), buf);
+for (int i = 0; i < BUFSIZE; i++)
+   outlet_out[i] = (int32_t)(freak::clampf(buf[i], -15.9f, 15.9f) * (1 << 27));]]></code.krate>
+   </obj.normal>
+</objdefs>

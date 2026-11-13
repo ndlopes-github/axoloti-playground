@@ -108,7 +108,7 @@ measurements.
   at -O3. DSP on the board: 46.5 % idle, 80.5 % with beat + 4-voice chord.
   `make render_groove` with mode `tour` renders every style for one lap.
 
-- soliton (fourth patch, 2026-11-12; not yet installed on flash or a card):
+- soliton (fourth patch, 2026-11-12; on the card):
   each voice's oscillator is a periodic field evolving under Burgers, KdV,
   Kuramoto–Sivashinsky or focusing NLS (`lib/soliton_field.h`; numerics and
   their reasons are in its header). Lessons:
@@ -131,7 +131,7 @@ measurements.
   - `./tests/render_soliton <dir> probe` and `patches/bench_soliton/probe_c3.axp`
     printed identical RMS, peak and zero-crossing numbers: host and board agree.
 
-- aeolian (fifth patch, 2026-11-12; not installed): a wind harp. Nuno asked
+- aeolian (fifth patch, 2026-11-12; on the card): a wind harp. Nuno asked
   for "something wild, droning or ambient, out of the box"; I proposed and
   built it. Eight waveguide strings, each driven by a van der Pol wake at the
   Strouhal frequency (Facchinetti–de Langre wake-oscillator model, velocity
@@ -150,9 +150,40 @@ measurements.
     renderer mirrors the object's init + one tick, or the (chaotic) host and
     board runs diverge. They then match to the digit.
 
-- patch switcher (2026-11-12, Nuno's request): `objects/patch_switch.axo` in
-  all five patches; Device Select + Device Lock together, then top pad 1-5
-  (freak, grains, groove, soliton, aeolian) loads `/<name>_v1/patch.bin`
+- raw (sixth patch, 2026-11-13; on the card): a monosynth after the MS-20,
+  Nuno's request ("raw monosynth, like a Korg MS-20"). HPF + LPF after the
+  Korg-35 (ZDF Sallen-Key, cubic clip in the feedback, one scalar Newton
+  solve per sample; uniqueness and BIBO arguments in `lib/raw_voice.h`), the
+  voice at 96 kHz with a 55-tap half-band decimator. Lessons:
+  - DSP: the voice is 40-48 % (constant), the patch 70.5-79.5 %. One filter
+    sample is ~167 cycles: three VDIVs (14 cycles each) and their dependency
+    chain dominate. A branch-free clamp version of the clip was slower.
+    `fast_sin`'s range reduction has a division: a dedicated G = s/(s+c)
+    on [0, pi/4] halved the coefficient cost. 1/dt interpolated per
+    sub-block instead of divided per sample. Mono `fx_delay` instead of
+    `fx_delay_st`: -4 %.
+  - Newton from the previous output had a 2e-2 local error at saw edges;
+    starting from the secant linearisation through the origin brought it to
+    6e-5 for one extra division.
+  - MS-20 EG1 has no decay, so EG1 -> pitch would detune held notes; here
+    PITCH<EG1 sweeps into the note (offset = amount (1 - EG1)). A departure
+    from the panel, flagged to Nuno.
+  - `./tests/render_raw <dir> probe` and `patches/bench_raw/probe_c3.axp`
+    print identical RMS and peak (zero crossings differ by one: the probe
+    starts its count against 0).
+
+- Launchkey and the board, learned 2026-11-13:
+  - **Shift sends no MIDI** in standalone mode, and while it is held the keys
+    send nothing either (the Launchkey keeps Shift + key for itself).
+  - `-runTest` stops the patch when its second is over: a dev patch cannot
+    keep logging afterwards. To log the controller, open
+    `patches/dev/midi_monitor.axp` in the GUI, Live, and `aseqdump`.
+
+- patch switcher (2026-11-12, Nuno's request; gesture changed 2026-11-13,
+  Nuno asked for another): `objects/patch_switch.axo` in all six patches;
+  hold both buttons left of the pads and tap top pad 1-6 (freak, grains,
+  groove, soliton, aeolian, raw; Nuno: works, holding one alone did not;
+  the code arms on CC 107) loads `/<name>_v1/patch.bin`
   with the firmware's `LoadPatch` ("Upload to SD Card" writes exactly
   that path, per the patcher's source in Ksoloti.jar `main/java`).
   - **Never touch the SD card (or LogTextMessage) in a MIDI handler**: those
@@ -164,6 +195,14 @@ measurements.
     during `-runTest` (port "Axoloti Core Axoloti MIDI").
   - The card in the board also holds Nuno's other Axoloti material; only
     add files, never rename or delete without asking.
+  - Which physical button sends CC 107 is not logged: docs/launchkey49mk3_map.md
+    says lower, but holding the lower alone did not switch (conjecture: it
+    is the upper). The gesture also relies on CC 107 sending a release
+    (value 0) when the button comes up: assumed, not yet seen in a log. Without
+    it, the 3 s cap still bounds the armed time. Checked on the board over
+    USB MIDI: hold + pad 6 found that /raw_v1 is missing; release + pad 1
+    did nothing.
+  - Nuno uploaded all six patches to the card with this switcher (2026-11-13).
 
 ## Open items
 
@@ -171,14 +210,15 @@ measurements.
   from the card was confirmed by Nuno on 2026-11-05. Reach the card via *Board →
   Enter Card Reader Mode*, since the laptop has no SD reader.
 - grains presets are set from the parameter meanings and not yet tuned by ear.
-- soliton: presets are set from the parameter meanings, not tuned by ear, and
-  the patch is not installed (flash or a card: Nuno to choose; the patch
-  switcher would put it on one card with grains and groove).
+- soliton: presets are set from the parameter meanings, not tuned by ear.
 - soliton: Nuno (2026-11-12): "the 4 engines sound similar but ok".
-- aeolian: presets not tuned by ear; not installed.
-- Patch switcher: works on the Launchkey (Nuno, 2026-11-12). The five patches
-  are on the card (/<name>_v1/patch.bin); /start.bin must be a patch that
-  contains the switcher (Upload to SD Card as Startup), or nothing switches.
+- aeolian: presets not tuned by ear.
+- raw: presets not tuned by ear (Nuno played it live 2026-11-13). Check by ear the Korg-35
+  scream, PITCH<EG1 (sweeps into the note), and the level balance across
+  presets (rms 0.04-0.31 in the host render).
+- Patch switcher: works on the Launchkey (Nuno, 2026-11-12; new gesture
+  2026-11-13). The six patches are on the card (/<name>_v1/patch.bin);
+  /start.bin must be a patch that contains the switcher (Upload to SD Card as Startup), or nothing switches.
 - Next sound work: multimode filter, cycling envelope, LFO → timbre on the mod
   wheel, pitch bend, pad LEDs through the DAW port.
 - Plaits port (speech, modal and chord engines): ≈36 KB code + 12 KB tables

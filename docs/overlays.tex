@@ -1,9 +1,9 @@
 % Launchkey 49 MK3 overlays: label strips to print at actual size, cut out and
 % lay on the panel next to the controls. Page 1 freak, page 2 grains, page 3 groove,
-% page 4 soliton, page 5 aeolian.
+% page 4 soliton, page 5 aeolian, page 6 raw.
 % Build: make overlays.  Labels come from lib/launchkey_ctl.h (freak),
 % lib/grains_ctl.h (grains), lib/groove_ctl.h (groove), lib/soliton_ctl.h
-% (soliton) and lib/aeolian_ctl.h (aeolian), as on the cheat sheets.
+% (soliton), lib/aeolian_ctl.h (aeolian) and lib/raw_ctl.h (raw), as on the cheat sheets.
 %
 % Spacing: the centre-to-centre distances below are NOT measured (Novation
 % publishes no panel drawing). Each strip is divided into one cell per
@@ -344,6 +344,57 @@
   \tag{46}{40}{\textcolor{lfoc}{LORENZ}\\\sm{Record}}
   \tag{103}{50}{SOUND\\\sm{left of pads, upper}}
   \tag{103}{40}{\FX{FX}\\\sm{left of pads, lower}}
+
+  \placement{208}{165}
+  \ruler{8}{16}
+\end{tikzpicture}
+
+%======================================================================== raw
+\newpage
+\begin{tikzpicture}[x=1mm, y=1mm]
+  \useasboundingbox (0,0) rectangle (297,210);
+  \header{raw}{a monosynth after the MS-20}
+
+  \strip{8}{165}{8}{\kp}{15}{%
+    {VCO2 PITCH\\\GR{MG RATE}\\\FX{GLIDE}}, {PW\\\GR{MG SHAPE}\\\FX{DRIVE}}, {VCO1 LVL\\\GR{PITCH<MG}\\\FX{NOISE}},
+    {VCO2 LVL\\\GR{PITCH<EG1}\\\FX{DLY TIME}}, {\textcolor{fltc}{HPF CUT}\\\GR{HPF<MG}\\\FX{DLY FDBK}},
+    {\textcolor{fltc}{HPF PEAK}\\\GR{HPF<EG2}\\\FX{DLY MIX}}, {\textcolor{fltc}{LPF CUT}\\\GR{LPF<MG}\\\FX{REVERB}},
+    {\textcolor{fltc}{LPF PEAK}\\\GR{LPF<EG2}\\\FX{REV TIME}}}%
+    {KNOBS \quad black = SOUND (Device Select) \quad \GR{green = MOD (round button, upper)} \quad \FX{blue = FX (Device Lock)}}
+
+  \strip{8}{145}{8}{\pp}{10}{%
+    {\sm{0}\\init}, {\sm{1}\\scream lead}, {\sm{2}\\filter sine}, {\sm{3}\\zap bass}, {\sm{4}\\ring bells}, {\sm{5}\\s\&h robot},
+    {\sm{6}\\wind noise}, {\sm{7}\\detuned pair}}%
+    {PADS, TOP ROW: presets}
+  \strip{8}{125}{8}{\pp}{10}{%
+    {\textcolor{fltc}{SCREAM}\\\sm{peaks up}}, {\textcolor{fltc}{OPEN}\\\sm{LPF +4 oct}}, {DIVE\\\sm{\(-\)1 oct}}, {VIBRATO},
+    {OCTAVE\\\sm{up}}, {\textcolor{fltc}{S\&H}\\\sm{LPF steps}}, {\FX{THROW}\\\sm{delay}}, {\FX{DRIVE}\\\sm{\(\times\)4}}}%
+    {PADS, BOTTOM ROW: performance, while held (pressure = amount)}
+
+  \strip{8}{103}{9}{\fp}{7}{%
+    \textcolor{modc}{DELAY}, \textcolor{modc}{ATK}, \textcolor{modc}{REL},
+    \textcolor{ampc}{HOLD}, \textcolor{ampc}{ATK}, \textcolor{ampc}{DEC}, \textcolor{ampc}{SUS}, \textcolor{ampc}{REL}, VOL}%
+    {FADERS \quad \textcolor{modc}{EG1} \quad \textcolor{ampc}{EG2 (and the VCA)}}
+  \strip{8}{83}{9}{\fp}{10}{%
+    {VCO1\\\sm{scale}}, {VCO2\\\sm{wave}}, {VCO2\\\sm{scale}}, {\GR{MG}\\\sm{S\&H}}, {\textcolor{fltc}{KEY}\\\sm{track}},
+    {LEGATO}, {VELO}, {\FX{DELAY}}, {NEXT\\\sm{preset}}}%
+    {FADER BUTTONS (press: step or toggle)}
+
+  \node[note, anchor=south west] at (8, 70) {TAGS, one per button};
+  \tag{8}{60}{\(\blacktriangleleft\) VCO1 WAVE\\\sm{track \(\blacktriangleleft\)}}
+  \tag{27}{60}{VCO1 WAVE \(\blacktriangleright\)\\\sm{track \(\blacktriangleright\)}}
+  \tag{46}{60}{SOUND\\\sm{Device Select}}
+  \tag{65}{60}{\FX{FX}\\\sm{Device Lock}}
+  \tag{84}{60}{BEND \(\pm\)2 st\\\sm{pitch wheel}}
+  \tag{103}{60}{VIBRATO\\\sm{mod wheel}}
+  \tag{8}{50}{\textcolor{lfoc}{DICE}\\\sm{Capture MIDI}}
+  \tag{46}{50}{\GR{TAP MG}\\\sm{Click}}
+  \tag{65}{50}{RESET\\\sm{Undo}}
+  \tag{8}{40}{HOLD\\\sm{Play}}
+  \tag{103}{50}{SOUND\\\sm{left of pads, upper}}
+  \tag{103}{40}{\FX{FX}\\\sm{left of pads, lower}}
+  \tag{122}{40}{PATCH: both held\\\sm{+ top pad 1--6}}
+  \tag{122}{50}{\GR{MOD} page\\\sm{round, upper}}
 
   \placement{208}{165}
   \ruler{8}{16}

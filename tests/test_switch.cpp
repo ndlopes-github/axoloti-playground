@@ -17,51 +17,57 @@ static int failures = 0;
     } while (0)
 
 static PatchSwitch ps;
-static bool armed;
-static int cc16(uint8_t n, uint8_t v = 127) { return ps.midi(0xBF, n, v, &armed); }
-static int pad(uint8_t note, uint8_t v = 100) { return ps.midi(0x99, note, v, &armed); }
+static int cc16(uint8_t n, uint8_t v) { return ps.midi(0xBF, n, v); }
+static int pad(uint8_t note, uint8_t v = 100) { return ps.midi(0x99, note, v); }
 static void wait_ms(int ms) { for (int i = 0; i < ms * 3; i++) ps.tick(); }
 
 int main() {
-    // together (50 ms apart), then pad 2 (note 41): slot 1, grains
     ps.init();
     wait_ms(1000);
-    cc16(51);
-    wait_ms(50);
-    cc16(52);
-    CHECK(armed, "not armed by a 50 ms pair");
-    wait_ms(500);
-    CHECK(pad(41) == 1, "pad 2 should load slot 1");
-    CHECK(pad(41) == -1, "one load per arming");
-
-    // in the other order, and with the buttons left of the pads (106, 107)
-    cc16(107);
-    wait_ms(100);
-    cc16(106);
-    CHECK(armed, "106/107 in either order");
-    CHECK(pad(48) == 4, "pad 5 (note 48) = slot 4, aeolian");
-
-    // two ordinary page changes, 300 ms apart: no arming, pads stay presets
-    cc16(51);
+    // hold the button, tap pad 2 (note 41): slot 1, grains
+    cc16(107, 127);
     wait_ms(300);
-    cc16(52);
-    CHECK(!armed, "armed by page changes 300 ms apart");
-    CHECK(pad(40) == -1, "a preset pad loaded a patch");
+    CHECK(pad(41) == 1, "held + pad 2 should load slot 1");
+    CHECK(pad(41) == -1, "one load per hold");
+    cc16(107, 0);
 
-    // armed, but the pad comes after 3 s
-    cc16(51); cc16(52);
+    // pad 6 (note 49) = slot 5, raw; pad 5 (note 48) = slot 4, aeolian
+    cc16(107, 127);
+    CHECK(pad(49) == 5, "pad 6 = raw");
+    cc16(107, 0);
+    cc16(107, 127);
+    CHECK(pad(48) == 4, "pad 5 = aeolian");
+    cc16(107, 0);
+
+    // a page change (press and release), then a preset pad: no load
+    cc16(107, 127);
+    wait_ms(80);
+    cc16(107, 0);
+    wait_ms(200);
+    CHECK(pad(40) == -1, "a preset pad after a page change loaded a patch");
+
+    // held for more than 3 s: no load (a lost release cannot arm for long)
+    cc16(107, 127);
     wait_ms(3100);
-    CHECK(pad(40) == -1, "loaded after the 3 s window");
+    CHECK(pad(40) == -1, "loaded after 3 s of holding");
+    cc16(107, 0);
 
-    // releases (value 0) do not count as presses; bottom pads and empty
-    // slots (pads 6-8) do nothing
-    cc16(51, 0); cc16(52, 0);
-    CHECK(!armed, "armed by releases");
-    cc16(51); cc16(52);
+    // while held: bottom pads, pad releases and the empty slots (pads 7, 8)
+    // do nothing, and the hold stays for a top pad
+    cc16(107, 127);
     CHECK(pad(36) == -1, "bottom pad loaded a patch");
-    CHECK(pad(49) == -1 && pad(40) == -1, "pad 6 is an empty slot, and it disarms");
-    cc16(51); cc16(52);
-    CHECK(pad(40, 0) == -1 && pad(40) == 0, "a pad release does not load; the press does (slot 0, freak)");
+    CHECK(pad(40, 0) == -1, "a pad release loaded a patch");
+    CHECK(pad(50) == -1 && pad(51) == -1, "pads 7 and 8 are empty slots");
+    CHECK(pad(40) == 0, "then pad 1 = freak");
+    cc16(107, 0);
+
+    // the other buttons, and the old gesture, do nothing
+    cc16(51, 127); cc16(52, 127); cc16(106, 127);
+    CHECK(pad(40) == -1, "Device Select + Device Lock no longer arm");
+    cc16(51, 0); cc16(52, 0); cc16(106, 0);
+    // the button on another channel does not arm
+    ps.midi(0xB0, 107, 127);
+    CHECK(pad(40) == -1, "CC 107 on channel 1 armed");
 
     if (failures) {
         printf("%d failure(s)\n", failures);

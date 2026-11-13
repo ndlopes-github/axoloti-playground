@@ -1,0 +1,107 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="raw_ctl" uuid="8b3da88e-5d9f-4102-9d6d-3a2b13008ac9">
+      <sDescription>Launchkey 49 MK3 control hub for the raw monosynth (after the Korg MS-20): mono keys with last-note priority, legato and hold; three knob pages (SOUND: oscillators and the two filters; MOD: MG and the envelope amounts; FX: glide, drive, noise, delay, reverb); faders are EG1 (delay, attack, release) and EG2 (hold, attack, decay, sustain, release); fader buttons pick waves, scales and toggles; pads are presets and performance gestures. It publishes the settings on the buses that raw_voice, fx_delay_st and fx_reverb read. The mapping lives in lib/raw_ctl.h; docs/raw_cheatsheet.pdf documents it. Use one per patch.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32.positive name="master" description="gain for gain/vca, 64 = unity"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="startpreset">
+            <MenuEntries>
+               <string>0 init</string>
+               <string>1 scream lead</string>
+               <string>2 filter sine</string>
+               <string>3 zap bass</string>
+               <string>4 ring bells</string>
+               <string>5 s&amp;h robot</string>
+               <string>6 wind noise</string>
+               <string>7 detuned pair</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+               <string>2</string>
+               <string>3</string>
+               <string>4</string>
+               <string>5</string>
+               <string>6</string>
+               <string>7</string>
+            </CEntries>
+         </combo>
+         <combo name="testnote">
+            <MenuEntries>
+               <string>off</string>
+               <string>C3 held</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../lib/raw_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::RawCtl rc;]]></code.declaration>
+      <code.init><![CDATA[rc.init();
+if (attr_startpreset) rc.apply_preset(attr_startpreset);  // test aids for -runTest
+if (attr_testnote) rc.key_on(48, 100);
+rc.tick();]]></code.init>
+      <code.krate><![CDATA[rc.tick();
+// Events to the patcher log, at most one per 64 ticks (the log keeps one
+// message per burst). No-op when no patcher is connected.
+if ((rc.ticks & 63) == 0) {
+   freak::Event e;
+   if (rc.pop_event(e)) {
+      static const char *const page[3] = {"SOUND", "MOD", "FX"};
+      switch (e.type) {
+      case freak::EV_PAGE:
+         LogTextMessage("raw: knob page %s (CC %d)", page[e.a % 3], e.b);
+         break;
+      case freak::EV_RESET:
+         LogTextMessage("raw: reset to the power-on sound");
+         break;
+      case freak::EV_PRESET:
+         LogTextMessage("raw: preset %d %s", e.a, freak::kRawPresets[e.a % freak::kNumRawPresets].name);
+         break;
+      case freak::EV_DICE:
+         LogTextMessage("raw: dice, VCO1 %s, VCO2 %s", freak::kWave1Names[e.a % freak::NUM_W1], freak::kWave2Names[e.b % freak::NUM_W2]);
+         break;
+      case freak::EV_WAVE1:
+         LogTextMessage("raw: VCO1 %s", freak::kWave1Names[e.a % freak::NUM_W1]);
+         break;
+      case freak::EV_WAVE2:
+         LogTextMessage("raw: VCO2 %s", freak::kWave2Names[e.a % freak::NUM_W2]);
+         break;
+      case freak::EV_SCALE1:
+         LogTextMessage("raw: VCO1 %s", freak::kScale1Names[e.a % 4]);
+         break;
+      case freak::EV_SCALE2:
+         LogTextMessage("raw: VCO2 %s", freak::kScale2Names[e.a % 4]);
+         break;
+      case freak::EV_RTOGGLE:
+         LogTextMessage("raw: %s %s", freak::kRToggleNames[e.a % 5], e.b ? "on" : "off");
+         break;
+      case freak::EV_HOLD:
+         LogTextMessage("raw: hold %s", e.a ? "on" : "off");
+         break;
+      case freak::EV_PICKED:
+         if (e.a == freak::kPickedFader)
+            LogTextMessage("raw: fader %d caught up at %d", e.b + 1, e.c);
+         else
+            LogTextMessage("raw: knob %d caught up on page %s at %d", e.b + 1, page[e.a % 3], e.c);
+         break;
+      case freak::EV_UNMAPPED:
+         LogTextMessage("raw: unmapped CC %d on ch %d (value %d)", e.b, e.a, e.c);
+         break;
+      }
+   }
+}
+outlet_master = (int32_t)(freak::bus().master * (1 << 27));]]></code.krate>
+      <code.midihandler><![CDATA[rc.midi(status, data1, data2);]]></code.midihandler>
+   </obj.normal>
+</objdefs>

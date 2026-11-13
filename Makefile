@@ -6,7 +6,7 @@ CXXFLAGS = -std=c++11 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined
 
 all: test tools/axo_dfu
 
-test: tests/run_tests tests/run_grains tests/run_grains_ctl tests/run_groove tests/run_soliton tests/run_aeolian tests/run_switch
+test: tests/run_tests tests/run_grains tests/run_grains_ctl tests/run_groove tests/run_soliton tests/run_aeolian tests/run_switch tests/run_raw
 	./tests/run_tests
 	./tests/run_grains
 	./tests/run_grains_ctl
@@ -14,6 +14,7 @@ test: tests/run_tests tests/run_grains tests/run_grains_ctl tests/run_groove tes
 	./tests/run_soliton
 	./tests/run_aeolian
 	./tests/run_switch
+	./tests/run_raw
 
 tests/run_tests: tests/test_freak.cpp lib/freak_dsp.h lib/launchkey_ctl.h
 	$(CXX) $(CXXFLAGS) -o $@ $<
@@ -43,7 +44,7 @@ tests/run_switch: tests/test_switch.cpp lib/patch_switch.h
 tools/axo_dfu: tools/axo_dfu.c
 	$(CC) -O2 -Wall -o $@ $< -l:libusb-1.0.so.0
 
-cheatsheet: docs/cheatsheet.pdf docs/grains_cheatsheet.pdf docs/groove_cheatsheet.pdf docs/soliton_cheatsheet.pdf docs/aeolian_cheatsheet.pdf
+cheatsheet: docs/cheatsheet.pdf docs/grains_cheatsheet.pdf docs/groove_cheatsheet.pdf docs/soliton_cheatsheet.pdf docs/aeolian_cheatsheet.pdf docs/raw_cheatsheet.pdf
 
 # Panel overlays for the Launchkey (print at actual size, cut out)
 overlays: docs/overlays.pdf
@@ -131,3 +132,21 @@ tests/render_aeolian: tests/render_aeolian.cpp $(AEOLIAN_DEPS)
 
 docs/aeolian_cheatsheet.pdf: docs/aeolian_cheatsheet.tex
 	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error aeolian_cheatsheet.tex >/dev/null && latexmk -c aeolian_cheatsheet.tex >/dev/null
+
+RAW_DEPS = lib/raw_ctl.h lib/raw_voice.h lib/launchkey_ctl.h lib/freak_dsp.h
+
+tests/run_raw: tests/test_raw.cpp $(RAW_DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+# Host render of the raw presets (dry): make render_raw &&
+#   ./tests/render_raw <out dir>          one WAV per preset
+#   ./tests/render_raw <out dir> probe    the numbers dev/probe logs on the board
+render_raw: tests/render_raw
+
+tests/render_raw: tests/render_raw.cpp $(RAW_DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+.PHONY: render_raw
+
+docs/raw_cheatsheet.pdf: docs/raw_cheatsheet.tex
+	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error raw_cheatsheet.tex >/dev/null && latexmk -c raw_cheatsheet.tex >/dev/null

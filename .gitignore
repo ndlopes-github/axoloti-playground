@@ -25,3 +25,5 @@ tests/render_soliton
 tests/run_aeolian
 tests/render_aeolian
 tests/run_switch
+tests/run_raw
+tests/render_raw

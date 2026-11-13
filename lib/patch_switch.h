@@ -2,13 +2,22 @@
 // Launchkey, without touching the firmware. Every patch on the card carries
 // one objects/patch_switch.axo.
 //
-// Gesture: press Device Select and Device Lock together (within kWindow of
-// each other, in either order; the buttons left of the pads, CC 106 and
-// 107, count as the same pair), then, within kArmed, a top pad: pad n
-// loads slot n. In every patch those two buttons only switch knob pages, so
-// the gesture has no lasting side effect; the window keeps two ordinary
-// page changes in a row from arming it. The armed state does not depend on
-// release messages.
+// Gesture: hold both buttons left of the pads and tap a top pad: pad n
+// loads slot n (works on the Launchkey, Nuno, 2026-11-13). The code arms
+// on CC 107 held; holding both buttons makes sure it is. Holding one of
+// them alone did not switch for Nuno, so the button that sends 107 may be
+// the upper one, not the lower one as docs/launchkey49mk3_map.md has it
+// (conjecture, not logged). In every patch those buttons only switch the
+// knob page, so the gesture changes no sound. The switch is armed only
+// while CC 107 is held: from its press (value > 0) to its release (value
+// 0), and at most kHoldMax after the press. So a page change followed by a
+// preset pad never loads a patch, if the button sends its release (assumed,
+// not logged; the cap bounds the armed time either way). (The earlier
+// gesture, Device Select + Device Lock, then a pad, is gone: Nuno asked for
+// another.)
+// Shift + a key was the first idea, but Shift sends no MIDI in standalone
+// mode, and while it is held the keys send nothing either (observed
+// 2026-11-13).
 //
 // Loading (objects/patch_switch.axo, on the board): the firmware's
 // LoadPatch("/dir/patch.bin"), the same call as the factory patch/load
@@ -36,48 +45,34 @@ namespace freak {
 // Slots, top pads left to right.
 static const char *const kSwitchSlots[] = {
     "/freak_v1/patch.bin", "/grains_v1/patch.bin", "/groove_v1/patch.bin",
-    "/soliton_v1/patch.bin", "/aeolian_v1/patch.bin",
+    "/soliton_v1/patch.bin", "/aeolian_v1/patch.bin", "/raw_v1/patch.bin",
 };
 const int kNumSwitchSlots = sizeof(kSwitchSlots) / sizeof(kSwitchSlots[0]);
+const uint8_t kSwitchButton = 107;  // a button left of the pads (ch 16); see above
 
 struct PatchSwitch {
-    static const uint32_t kWindow = 360;   // 120 ms of control ticks (3 kHz)
-    static const uint32_t kArmed = 9000;   // 3 s
-    uint32_t t;                 // control ticks (written by the DSP thread only)
-    uint32_t t_sel, t_lock;     // last press of each button, 0 = never
-    uint32_t armed_until;       // 0 = not armed
+    static const uint32_t kHoldMax = 9000;  // 3 s of control ticks (3 kHz)
+    uint32_t t;            // control ticks (written by the DSP thread only)
+    uint32_t held_since;   // press of the button, 0 = not held
 
-    void init() { t = 1; t_sel = t_lock = 0; armed_until = 0; }
+    void init() { t = 1; held_since = 0; }
     void tick() { t++; }
 
-    // Raw MIDI. Returns the slot to load, or -1. Sets *armed when this
-    // message armed the gesture (for the log).
-    int midi(uint8_t status, uint8_t d1, uint8_t d2, bool *armed) {
-        *armed = false;
+    // Raw MIDI. Returns the slot to load, or -1.
+    int midi(uint8_t status, uint8_t d1, uint8_t d2) {
         const uint8_t type = status & 0xF0, ch = status & 0x0F;
-        const uint32_t now = t;
-        if (type == 0xB0 && ch == 15 && d2 > 0) {
-            if (d1 == 51 || d1 == 106) t_sel = now;
-            else if (d1 == 52 || d1 == 107) t_lock = now;
-            else return -1;
-            if (t_sel && t_lock) {
-                const uint32_t d = t_sel > t_lock ? t_sel - t_lock : t_lock - t_sel;
-                if (d <= kWindow) {
-                    armed_until = now + kArmed;
-                    t_sel = t_lock = 0;  // one arming per pair of presses
-                    *armed = true;
-                }
-            }
+        if (type == 0xB0 && ch == 15 && d1 == kSwitchButton) {
+            held_since = d2 > 0 ? t : 0;
             return -1;
         }
-        if (type == 0x90 && ch == 9 && d2 > 0 && armed_until && now <= armed_until) {
+        if (type == 0x90 && ch == 9 && d2 > 0 && held_since && t - held_since <= kHoldMax) {
             // top row: notes 40-43, 48-51 = pads 1-8
             int pad = -1;
             if (d1 >= 40 && d1 <= 43) pad = d1 - 40;
             else if (d1 >= 48 && d1 <= 51) pad = d1 - 44;
-            if (pad < 0) return -1;
-            armed_until = 0;
-            return pad < kNumSwitchSlots ? pad : -1;
+            if (pad < 0 || pad >= kNumSwitchSlots) return -1;
+            held_since = 0;  // one load per hold
+            return pad;
         }
         return -1;
     }

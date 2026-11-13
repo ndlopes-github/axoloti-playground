@@ -1,0 +1,59 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="raw_cycles" uuid="2c7d1e64-9a3b-4f58-b0e2-6d4c8a1f3e95">
+      <sDescription>Development aid: CPU cycles (DWT cycle counter, minimum over 1000 blocks) of the raw voice's pieces for one 16-sample block: the whole render, one filter (32 samples at 96 kHz), one oscillator, the decimator, the per-sub-block coefficients, the envelopes. One line to the patcher log, for -runTest.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../../lib/raw_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::RawCtl rc;
+freak::RawVoice rv;
+freak::Sk35 flt;
+freak::Halfband hb;
+freak::RawEnv e1, e2;
+float buf[16];
+volatile float sink;
+uint32_t blocks, c_render, c_lp, c_hp, c_saw, c_pulse, c_tri, c_dec, c_coef, c_env;]]></code.declaration>
+      <code.init><![CDATA[CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+rc.init();
+rc.apply_preset(1);
+rc.key_on(48, 100);
+rc.tick();
+rv.init();
+flt.init();
+hb.init();
+e1.init(); e2.init();
+e1.trigger(false); e2.trigger(false);
+blocks = 0;
+c_render = c_lp = c_hp = c_saw = c_pulse = c_tri = c_dec = c_coef = c_env = 0xFFFFFFFFu;]]></code.init>
+      <code.krate><![CDATA[blocks++;
+#define MINC(var, code) { const uint32_t t0 = DWT->CYCCNT; code; const uint32_t d = DWT->CYCCNT - t0; if (d < var) var = d; }
+if (blocks < 1000) {
+   rc.tick();
+   MINC(c_render, rv.render(freak::rawbus(), buf));
+   float acc = 0.0f, x = 0.3f, p = 0.0f;
+   const float dt = 0.0027f, idt = 1.0f / dt;
+   MINC(c_lp, for (int i = 0; i < 32; i++) { acc += flt.lp(x, 0.2f, 2.0f); x = -x; });
+   MINC(c_hp, for (int i = 0; i < 32; i++) { acc += flt.hp(x, 0.2f, 2.0f); x = -x; });
+   MINC(c_saw, for (int i = 0; i < 32; i++) { acc += freak::raw_saw(p, dt, idt); p += dt; if (p >= 1.0f) p -= 1.0f; });
+   MINC(c_pulse, for (int i = 0; i < 32; i++) { acc += freak::raw_pulse(p, 0.3f, dt, idt); p += dt; if (p >= 1.0f) p -= 1.0f; });
+   MINC(c_tri, for (int i = 0; i < 32; i++) { acc += freak::raw_tri(p, dt, idt); p += dt; if (p >= 1.0f) p -= 1.0f; });
+   MINC(c_dec, for (int i = 0; i < 16; i++) { acc += hb.process(rv.hc, x, -x); x *= 0.999f; });
+   MINC(c_coef, for (int i = 0; i < 4; i++) { acc += freak::raw_G(300.0f * (i + 1)) + freak::raw_G(900.0f * (i + 1)) + freak::RawVoice::note_dt(48.0f + i) + freak::RawVoice::note_dt(55.0f + i); });
+   freak::EnvCoefs k1, k2;
+   freak::env_coefs(k1, 0.0f, 0.01f, 0.0f, 1.0f, 0.1f);
+   freak::env_coefs(k2, 0.0f, 0.01f, 0.2f, 0.5f, 0.1f);
+   MINC(c_env, for (int i = 0; i < 16; i++) { acc += freak::eg1_tick(e1, k1, true) + freak::eg2_tick(e2, k2, true); });
+   sink = acc;
+}
+if (blocks == 1100)
+   LogTextMessage("raw cycles per 16-sample block (min): render %d | one LPF x32 %d | HPF x32 %d | saw x32 %d | pulse x32 %d | tri x32 %d | decimator x16 %d | coefs x4 %d | 2 envs x16 %d",
+      c_render, c_lp, c_hp, c_saw, c_pulse, c_tri, c_dec, c_coef, c_env);]]></code.krate>
+   </obj.normal>
+</objdefs>

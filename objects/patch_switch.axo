@@ -1,6 +1,6 @@
 <objdefs appVersion="1.1.0">
    <obj.normal id="patch_switch" uuid="9d061696-b8e2-49b3-a225-b7848d2bd4ce">
-      <sDescription>Switch to another patch on the SD card from the Launchkey: press Device Select and Device Lock together, then a top pad within 3 s. Pad 1 freak, 2 grains, 3 groove, 4 soliton, 5 aeolian (each uploaded with Upload to SD Card, so it is at /name_v1/patch.bin). A patch that is not on the card is logged and ignored. Put one in every patch on the card. The logic is lib/patch_switch.h.</sDescription>
+      <sDescription>Switch to another patch on the SD card from the Launchkey: hold both buttons left of the pads and tap a top pad. Pad 1 freak, 2 grains, 3 groove, 4 soliton, 5 aeolian, 6 raw (each uploaded with Upload to SD Card, so it is at /name_v1/patch.bin). A patch that is not on the card is logged and ignored. Put one in every patch on the card. The logic is lib/patch_switch.h.</sDescription>
       <author>Axoloti project</author>
       <license>MIT</license>
       <inlets/>
@@ -12,11 +12,9 @@
          <include>../lib/patch_switch.h</include>
       </includes>
       <code.declaration><![CDATA[freak::PatchSwitch ps;
-volatile int req;      // slot asked for by the MIDI thread, -1 = none
-volatile bool armed;   // the gesture armed (for the log)]]></code.declaration>
+volatile int req;      // slot asked for by the MIDI thread, -1 = none]]></code.declaration>
       <code.init><![CDATA[ps.init();
-req = -1;
-armed = false;]]></code.init>
+req = -1;]]></code.init>
       <code.krate><![CDATA[// The card check, the log and LoadPatch run here, in the DSP thread (7.3 KB
 // of stack): the MIDI handlers run in threads with 256-byte stacks, and
 // FatFs puts a 512-byte long-file-name buffer on the stack (_USE_LFN 2).
@@ -24,10 +22,6 @@ armed = false;]]></code.init>
 // signals this thread, which stops this patch after the cycle and loads the
 // other one (the factory patch/load object calls it from k-rate code too).
 ps.tick();
-if (armed) {
-   armed = false;
-   LogTextMessage("switch: armed, top pad 1-5");
-}
 const int s = req;
 if (s >= 0) {
    req = -1;
@@ -42,9 +36,7 @@ if (s >= 0) {
    }
 }]]></code.krate>
       <code.midihandler><![CDATA[// Arithmetic only (see the k-rate code).
-bool a;
-const int s = ps.midi(status, data1, data2, &a);
-if (a) armed = true;
+const int s = ps.midi(status, data1, data2);
 if (s >= 0) req = s;]]></code.midihandler>
    </obj.normal>
 </objdefs>
