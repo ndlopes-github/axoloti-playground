@@ -1,0 +1,12 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="dev/quartet_cycles" name="cycles" x="14" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets/>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+      <MidiChannel>1</MidiChannel>
+   </settings>
+   <notes><![CDATA[bench: cycle counts of the quartet voice's pieces (objects/dev/quartet_cycles.axo)]]></notes>
+</patch-1.0>

@@ -172,17 +172,51 @@ measurements.
     print identical RMS and peak (zero crossings differ by one: the probe
     starts its count against 0).
 
+- quartet (seventh patch, 2026-11-13/14; on the card, the startup patch):
+  four voices after the Roland Jupiter-4, which Nuno owns ("very
+  unpractical"). He asked to go slowly (one step per review) and decided:
+  no factory presets, POLY and UNISON only, one ADSR shared by VCF and VCA
+  with a VCA GATE switch (Juno style), no arpeggiator (the Launchkey has
+  one), no delay or reverb (an external pedal), the S&H pad a switch, the
+  sub in four levels. Sources: Roland's spec page (403 for fetches; Nuno
+  pasted it), the owner's manual OCR on archive.org/stream (fetchable),
+  AMSynths' AM8104 page (4-pole OTA LPF + 1-pole HPF). Lessons:
+  - **Estimate cycles, then measure early**: the first board run was
+    123.5 % DSP (estimated ~30 %). The full OTA model (four saturating
+    stages, predictor-corrector, 6 divisions) cost 641 cycles/sample per
+    voice: ~450 instructions, 125 vmul. The board filter is `Ladder4`
+    (linear stages + the diode-like limiter, one scalar solve): 178
+    cycles. The full model stays in the header as the host reference.
+  - Any per-sample saturation inside the resonance loop evaluated from the
+    previous sample (lag-one, extrapolated, first stage only) detuned the
+    self-oscillation with frequency (0.88 -> 0.96 fc). Only a corrector
+    pass fixed it; with linear stages and a memoryless limiter the
+    oscillation sits exactly at fc.
+  - 4-point BLEP (integrated cubic B-spline) beat the 2-point PolyBLEP by
+    13 dB of aliasing at every pitch, for a few multiplies.
+  - The voice's hot state goes into locals for the sample loop (stores to
+    out[] force member reloads), as in aeolian.
+  - A -80 dB noise floor at the filter input lets self-oscillation start
+    with every source off.
+  - DSP: idle 8.5 %, four voices 64.5 %, worst + Ensemble 72 %.
+
 - Launchkey and the board, learned 2026-11-13:
   - **Shift sends no MIDI** in standalone mode, and while it is held the keys
     send nothing either (the Launchkey keeps Shift + key for itself).
   - `-runTest` stops the patch when its second is over: a dev patch cannot
     keep logging afterwards. To log the controller, open
     `patches/dev/midi_monitor.axp` in the GUI, Live, and `aseqdump`.
+  - **Fader buttons toggle** (Nuno observed it): one press lights green and
+    acts, the next turns the light off and does nothing (the patches act on
+    values > 0 only). Nuno: "it's ok that way". Values not logged.
+  - The GUI patcher **caches object definitions**: after editing an `.axo`,
+    a running patcher still compiles the old object code (the `lib/` headers
+    are read fresh). Reopen the patch or restart the patcher.
 
 - patch switcher (2026-11-12, Nuno's request; gesture changed 2026-11-13,
-  Nuno asked for another): `objects/patch_switch.axo` in all six patches;
-  hold both buttons left of the pads and tap top pad 1-6 (freak, grains,
-  groove, soliton, aeolian, raw; Nuno: works, holding one alone did not;
+  Nuno asked for another): `objects/patch_switch.axo` in all seven patches;
+  hold both buttons left of the pads and tap top pad 1-7 (freak, grains,
+  groove, soliton, aeolian, raw, quartet; Nuno: works, holding one alone did not;
   the code arms on CC 107) loads `/<name>_v1/patch.bin`
   with the firmware's `LoadPatch` ("Upload to SD Card" writes exactly
   that path, per the patcher's source in Ksoloti.jar `main/java`).
@@ -202,11 +236,13 @@ measurements.
     it, the 3 s cap still bounds the armed time. Checked on the board over
     USB MIDI: hold + pad 6 found that /raw_v1 is missing; release + pad 1
     did nothing.
-  - Nuno uploaded all six patches to the card with this switcher (2026-11-13).
+  - Nuno uploaded all six patches to the card with this switcher (2026-11-13),
+    then quartet as the startup; a patch uploaded before a slot was added
+    does not know that slot: adding one means re-uploading the others.
 
 ## Open items
 
-- SD card: holds grains (`/start.bin`, `/grains/01..08.wav`). Standalone boot
+- SD card: `/start.bin` is quartet (2026-11-13); grains' bank is `/grains/01..08.wav`. Standalone boot
   from the card was confirmed by Nuno on 2026-11-05. Reach the card via *Board →
   Enter Card Reader Mode*, since the laptop has no SD reader.
 - grains presets are set from the parameter meanings and not yet tuned by ear.
@@ -216,8 +252,12 @@ measurements.
 - raw: presets not tuned by ear (Nuno played it live 2026-11-13). Check by ear the Korg-35
   scream, PITCH<EG1 (sweeps into the note), and the level balance across
   presets (rms 0.04-0.31 in the host render).
+- quartet: presets 2-8 not tuned by ear; the Ensemble rate and depth are
+  guesses (0.6 Hz, 4 +- 2.2 ms) to tune against Nuno's Jupiter-4; its
+  self-oscillation and filter drive were not compared with the real unit.
 - Patch switcher: works on the Launchkey (Nuno, 2026-11-12; new gesture
-  2026-11-13). The six patches are on the card (/<name>_v1/patch.bin);
+  2026-11-13). The seven patches are on the card (/<name>_v1/patch.bin;
+  quartet is /start.bin; Nuno was re-uploading the other six for pad 7);
   /start.bin must be a patch that contains the switcher (Upload to SD Card as Startup), or nothing switches.
 - Next sound work: multimode filter, cycling envelope, LFO → timbre on the mod
   wheel, pitch bend, pad LEDs through the DAW port.

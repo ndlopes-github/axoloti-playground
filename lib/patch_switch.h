@@ -3,7 +3,8 @@
 // one objects/patch_switch.axo.
 //
 // Gesture: hold both buttons left of the pads and tap a top pad: pad n
-// loads slot n (works on the Launchkey, Nuno, 2026-11-13). The code arms
+// loads slot n (works on the Launchkey, Nuno, 2026-11-13): 1 freak, 2 grains,
+// 3 groove, 4 soliton, 5 aeolian, 6 raw, 7 quartet. The code arms
 // on CC 107 held; holding both buttons makes sure it is. Holding one of
 // them alone did not switch for Nuno, so the button that sends 107 may be
 // the upper one, not the lower one as docs/launchkey49mk3_map.md has it
@@ -46,6 +47,7 @@ namespace freak {
 static const char *const kSwitchSlots[] = {
     "/freak_v1/patch.bin", "/grains_v1/patch.bin", "/groove_v1/patch.bin",
     "/soliton_v1/patch.bin", "/aeolian_v1/patch.bin", "/raw_v1/patch.bin",
+    "/quartet_v1/patch.bin",
 };
 const int kNumSwitchSlots = sizeof(kSwitchSlots) / sizeof(kSwitchSlots[0]);
 const uint8_t kSwitchButton = 107;  // a button left of the pads (ch 16); see above

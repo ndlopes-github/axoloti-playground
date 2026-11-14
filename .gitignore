@@ -27,3 +27,5 @@ tests/render_aeolian
 tests/run_switch
 tests/run_raw
 tests/render_raw
+tests/run_quartet
+tests/render_quartet

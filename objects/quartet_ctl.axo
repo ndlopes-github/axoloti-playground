@@ -1,0 +1,96 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="quartet_ctl" uuid="ad093567-352c-4783-b4de-32e97602f929">
+      <sDescription>Launchkey 49 MK3 control hub for the quartet patch (after the Roland Jupiter-4): keys with POLY and UNISON (bottom pads 6, 7), HOLD (Play); faders ATTACK, DECAY, SUSTAIN, RELEASE, HPF, LPF, RESONANCE, ENV-&gt;VCF, volume; knob pages SOUND (Device Select, upper button left of the pads) and MOD (Device Lock, lower button left of the pads, upper round button), with pickup; fader buttons WAVE, SUB, NOISE, KYBD, ENV POLARITY, VCA GATE, LFO WAVE, ENSEMBLE, next preset; Track &lt; &gt; VCO range; top pads presets; bottom pad 8 S&amp;H on/off. It publishes on the bus quartet_voices reads. The mapping lives in lib/quartet_ctl.h. Use one per patch.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="startpreset">
+            <MenuEntries>
+               <string>1 power-on chord</string>
+               <string>2 sweep pad</string>
+               <string>3 pwm strings</string>
+               <string>4 unison lead</string>
+               <string>5 s&amp;h burble</string>
+               <string>6 pluck bass</string>
+               <string>7 resonance keys</string>
+               <string>8 gate stabs</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+               <string>2</string>
+               <string>3</string>
+               <string>4</string>
+               <string>5</string>
+               <string>6</string>
+               <string>7</string>
+            </CEntries>
+         </combo>
+         <combo name="test">
+            <MenuEntries>
+               <string>off</string>
+               <string>C3 held</string>
+               <string>chord, 4 voices</string>
+               <string>chord, resonance 1</string>
+               <string>chord, all sources, resonance 1, ensemble</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+               <string>2</string>
+               <string>3</string>
+               <string>4</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../lib/quartet_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::QuartetCtl qc;]]></code.declaration>
+      <code.init><![CDATA[qc.init();
+if (attr_startpreset) qc.apply_preset(attr_startpreset);
+// test aids for -runTest: held keys, and the costliest settings
+if (attr_test == 1) qc.key_on(48);
+if (attr_test >= 2) { qc.key_on(48); qc.key_on(52); qc.key_on(55); qc.key_on(59); }
+if (attr_test >= 3) { qc.fader[freak::QF_RES] = 127; qc.fader[freak::QF_LPF] = 110; }
+if (attr_test == 4) { qc.sub = 2; qc.noise = true; qc.wave = freak::QW_PWM; qc.ensemble = true; }
+qc.publish();]]></code.init>
+      <code.krate><![CDATA[qc.tick();
+// Events to the patcher log, at most one per 64 ticks (the log keeps one
+// message per burst). No-op when no patcher is connected.
+if ((qc.ticks & 63) == 0) {
+   freak::QEvent e;
+   if (qc.pop_event(e)) {
+      switch (e.type) {
+      case freak::QEV_PAGE: LogTextMessage("quartet: knob page %s (CC %d)", e.a ? "MOD" : "SOUND", e.b); break;
+      case freak::QEV_WAVE: LogTextMessage("quartet: wave %s", freak::kQWaveNames[e.a % freak::NUM_QW]); break;
+      case freak::QEV_SUB: LogTextMessage("quartet: sub %s", freak::kQSubNames[e.a % 4]); break;
+      case freak::QEV_NOISE: LogTextMessage("quartet: noise %s", e.a ? "on" : "off"); break;
+      case freak::QEV_KYBD: LogTextMessage("quartet: keyboard follow %s", freak::kQKybdNames[e.a % 4]); break;
+      case freak::QEV_ENVPOL: LogTextMessage("quartet: envelope on the cutoff %s", e.a ? "inverted" : "normal"); break;
+      case freak::QEV_VCAGATE: LogTextMessage("quartet: VCA %s", e.a ? "GATE" : "ADSR"); break;
+      case freak::QEV_LFOWAVE: LogTextMessage("quartet: LFO %s", freak::kQLfoNames[e.a % freak::NUM_QL]); break;
+      case freak::QEV_RANGE: LogTextMessage("quartet: range %s", freak::kQRangeNames[e.a % 4]); break;
+      case freak::QEV_MODE: LogTextMessage("quartet: %s", e.a ? "UNISON" : "POLY"); break;
+      case freak::QEV_HOLD: LogTextMessage("quartet: hold %s", e.a ? "on" : "off"); break;
+      case freak::QEV_PORTA: LogTextMessage("quartet: portamento %s", e.a ? "on" : "off"); break;
+      case freak::QEV_TAP: LogTextMessage("quartet: trigger rate %d Hz (tap)", e.a); break;
+      case freak::QEV_RESET: LogTextMessage("quartet: reset to the power-on sound"); break;
+      case freak::QEV_SH: LogTextMessage("quartet: S&H %s", e.a ? "on" : "off"); break;
+      case freak::QEV_ENSEMBLE: LogTextMessage("quartet: ensemble %s", e.a ? "on" : "off"); break;
+      case freak::QEV_PRESET: LogTextMessage("quartet: preset %d %s", e.a + 1, freak::kQPresets[e.a % freak::kNumQPresets].name); break;
+      case freak::QEV_PICKED:
+         if (e.a == freak::kQPickedFader) LogTextMessage("quartet: fader %d caught up at %d", e.b + 1, e.c);
+         else LogTextMessage("quartet: knob %d caught up on page %s at %d", e.b + 1, e.a ? "MOD" : "SOUND", e.c);
+         break;
+      case freak::QEV_UNMAPPED: LogTextMessage("quartet: unmapped CC %d on ch %d (value %d)", e.b, e.a, e.c); break;
+      }
+   }
+}]]></code.krate>
+      <code.midihandler><![CDATA[qc.midi(status, data1, data2);]]></code.midihandler>
+   </obj.normal>
+</objdefs>

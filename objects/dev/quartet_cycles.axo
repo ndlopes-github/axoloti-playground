@@ -1,0 +1,57 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="quartet_cycles" uuid="41c1923c-b06d-48eb-8628-f341dc8299f3">
+      <sDescription>Development aid: CPU cycles (DWT cycle counter, minimum over 1000 blocks) of the quartet voice's pieces for one 16-sample block: one voice's render, the board low-pass x16, the full OTA model x16, saw x16, pulse x16, the envelope x16, the per-sub-block pitch and cutoff x4, the shared modulators. One line to the patcher log, for -runTest.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../../lib/quartet_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::QuartetCtl qc;
+freak::QuartetMod qm;
+freak::QuartetVoice qv;
+freak::Ladder4 lad;
+freak::OtaLadder full;
+float buf[16];
+volatile float sink;
+uint32_t blocks, c_render, c_lad, c_full, c_saw, c_pulse, c_env, c_coef, c_mod;]]></code.declaration>
+      <code.init><![CDATA[CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+qc.init();
+qc.key_on(48);
+qc.publish();
+qm.init();
+qv.init(1);
+qv.note = 48; qv.gate = true; qv.trig = 1;
+lad.init();
+lad.set_k(3.0f);
+full.init();
+full.set_k(3.0f);
+blocks = 0;
+c_render = c_lad = c_full = c_saw = c_pulse = c_env = c_coef = c_mod = 0xFFFFFFFFu;]]></code.init>
+      <code.krate><![CDATA[blocks++;
+#define MINC(var, code) { const uint32_t t0 = DWT->CYCCNT; code; const uint32_t d = DWT->CYCCNT - t0; if (d < var) var = d; }
+if (blocks < 1000) {
+   const freak::QuartetParams &P = freak::qbus().P;
+   MINC(c_mod, qm.block(P));
+   for (int i = 0; i < 16; i++) buf[i] = 0.0f;
+   MINC(c_render, qv.render(P, qm, buf));
+   float acc = 0.0f, x = 0.3f, p = 0.0f;
+   const float dt = 0.0027f, idt = 1.0f / dt, g = freak::q_g(1500.0f), G = freak::q_G(1500.0f);
+   MINC(c_lad, for (int i = 0; i < 16; i++) { acc += lad.process(x, G); x = -x; });
+   MINC(c_full, for (int i = 0; i < 16; i++) { acc += full.process(x, g); x = -x; });
+   MINC(c_saw, for (int i = 0; i < 16; i++) { acc += freak::q_saw(p, idt); p += dt; if (p >= 1.0f) p -= 1.0f; });
+   MINC(c_pulse, for (int i = 0; i < 16; i++) { acc += freak::q_pulse(p, 0.3f, idt); p += dt; if (p >= 1.0f) p -= 1.0f; });
+   MINC(c_env, for (int i = 0; i < 16; i++) { acc += qv.env_tick(qm); });
+   MINC(c_coef, for (int i = 0; i < 4; i++) { acc += freak::QuartetVoice::note_dt(48.0f + i) + freak::q_g(20.0f * freak::fast_exp2(6.0f + 0.1f * i)); });
+   sink = acc + buf[3];
+}
+if (blocks == 1100)
+   LogTextMessage("quartet cycles per 16-sample block (min): voice render %d | low-pass x16 %d | full OTA model x16 %d | saw x16 %d | pulse x16 %d | env x16 %d | pitch+cutoff x4 %d | modulators %d",
+      c_render, c_lad, c_full, c_saw, c_pulse, c_env, c_coef, c_mod);]]></code.krate>
+   </obj.normal>
+</objdefs>

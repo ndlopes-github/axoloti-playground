@@ -14,7 +14,7 @@ Channels are 1-based.
 | Keys (49) | ch 1 note on/off 36–84, velocity | at the default octave |
 | Knobs 1–8 | ch 1 CC 21–28 | observed in order |
 | Faders 1–9 | ch 1 CC 71–79 | nine consecutive CCs; fader *i* = CC 70+*i* and master = CC 79 is inferred, not checked one by one |
-| Fader buttons 1–9 | ch 1 CC 11–19, 127 = press, 0 = release | observed in order |
+| Fader buttons 1–9 | ch 1 CC 11–19 | numbers observed in order. They **toggle** in standalone mode (Nuno, 2026-11-13): one press lights the button green and acts, the next turns the light off and does nothing, so the values are presumably 127 then 0 (not logged). The patches act on values > 0 only, so a button acts on every second press. |
 | Pads, top row L→R | ch 10 notes 40 41 42 43 48 49 50 51 | velocity + polyphonic aftertouch |
 | Pads, bottom row L→R | ch 10 notes 36 37 38 39 44 45 46 47 | velocity + polyphonic aftertouch |
 | Pitch wheel | ch 1 pitch bend −8192..8191 | |

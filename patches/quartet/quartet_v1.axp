@@ -1,0 +1,36 @@
+<patch-1.0 appVersion="1.1.0">
+   <obj type="quartet_ctl" name="ctl" x="14" y="14">
+      <params/>
+      <attribs>
+         <combo attributeName="startpreset" selection="1 power-on chord"/>
+         <combo attributeName="test" selection="off"/>
+      </attribs>
+   </obj>
+   <obj type="patch_switch" name="switch" x="196" y="14">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="quartet_voices" name="voices" x="14" y="196">
+      <params/>
+      <attribs/>
+   </obj>
+   <obj type="audio/out stereo" name="dac" x="196" y="196">
+      <params/>
+      <attribs/>
+   </obj>
+   <nets>
+      <net>
+         <source obj="voices" outlet="l"/>
+         <dest obj="dac" inlet="left"/>
+      </net>
+      <net>
+         <source obj="voices" outlet="r"/>
+         <dest obj="dac" inlet="right"/>
+      </net>
+   </nets>
+   <settings>
+      <subpatchmode>no</subpatchmode>
+      <MidiChannel>1</MidiChannel>
+   </settings>
+   <notes><![CDATA[quartet v1: four voices after the Roland Jupiter-4 (VCO + sub + noise, HPF, 4-pole LPF with diode-limited resonance, ADSR or gate, LFO, S&H, Ensemble), stereo. quartet_ctl (lib/quartet_ctl.h) maps the Launchkey 49 MK3; quartet_voices (lib/quartet_voice.h) are the voices; docs/quartet_cheatsheet.pdf documents it.]]></notes>
+</patch-1.0>

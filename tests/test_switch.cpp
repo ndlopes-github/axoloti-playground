@@ -52,12 +52,14 @@ int main() {
     CHECK(pad(40) == -1, "loaded after 3 s of holding");
     cc16(107, 0);
 
-    // while held: bottom pads, pad releases and the empty slots (pads 7, 8)
-    // do nothing, and the hold stays for a top pad
+    // while held: bottom pads, pad releases and the empty slot (pad 8)
+    // do nothing, and the hold stays for a top pad; pad 7 is quartet
     cc16(107, 127);
     CHECK(pad(36) == -1, "bottom pad loaded a patch");
     CHECK(pad(40, 0) == -1, "a pad release loaded a patch");
-    CHECK(pad(50) == -1 && pad(51) == -1, "pads 7 and 8 are empty slots");
+    CHECK(pad(51) == -1, "pad 8 is an empty slot");
+    CHECK(pad(50) == 6, "pad 7 = quartet");
+    cc16(107, 127);
     CHECK(pad(40) == 0, "then pad 1 = freak");
     cc16(107, 0);
 

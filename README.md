@@ -73,11 +73,25 @@ gestures (scream, open, dive, S&H). See
 [`docs/raw_cheatsheet.pdf`](docs/raw_cheatsheet.pdf) and the filter
 derivation in `lib/raw_voice.h`. On the SD card with the others.
 
+**`patches/quartet/quartet_v1.axp`** is the seventh patch, and the startup
+patch on the card: four voices after the Roland Jupiter-4. Each voice is a VCO
+(saw, square, pulse in four widths, PWM) with a sub-oscillator (four levels)
+and noise, a 1-pole high-pass and a 4-pole low-pass whose resonance is limited
+as the Jupiter-4's diodes do: it self-oscillates at the cutoff, in tune with
+the keys. One ADSR per voice drives the cutoff (either polarity) and the VCA,
+or the VCA follows the gate. One LFO (sine, square, saw, inverted saw, with a
+delay), a sample-and-hold of noise on the cutoff, and the Ensemble (a stereo
+chorus). POLY or UNISON (four voices on the lowest key, detuned), hold,
+portamento, eight presets on the top pads. No arpeggiator (the Launchkey has
+one) and no delay or reverb (an external pedal). See
+[`docs/quartet_cheatsheet.pdf`](docs/quartet_cheatsheet.pdf) and the filter
+analysis in `lib/quartet_voice.h`.
+
 ## Switching patches (one SD card)
 
 Every patch carries `objects/patch_switch.axo`. To change patch, **hold both
 buttons left of the pads and tap a top pad**: pad 1 freak, 2 grains,
-3 groove, 4 soliton, 5 aeolian, 6 raw. On their own those buttons only switch
+3 groove, 4 soliton, 5 aeolian, 6 raw, 7 quartet. On their own those buttons only switch
 the knob page, and the switch is armed only while they are held, so a page
 change followed by a preset never loads a patch. (Shift + a key was tried
 first: in standalone mode Shift sends no MIDI, and while it is held the keys
@@ -85,7 +99,7 @@ send nothing.) The switcher loads
 `/<name>_v1/patch.bin` from the card with the firmware's `LoadPatch` (no
 firmware change). A patch that is not on the card is logged and ignored.
 
-To install: open each of the six patches in the patcher and use *Upload to
+To install: open each of the seven patches in the patcher and use *Upload to
 SD Card*. That writes `/<name>_v1/patch.bin` and the samples the patch needs
 (`/grains`, `/kit`) and touches nothing else. Then use *Upload to SD Card as
 Startup* on the one that should start when the card is in (`/start.bin`).
@@ -144,6 +158,8 @@ Without a card, the board starts freak from flash, as before.
 | `tests/test_aeolian.cpp`, `tests/render_aeolian.cpp`, `objects/dev/aeolian_cycles.axo` | Tests against exact results (tuning, ring time, the van der Pol limit cycle at the Strouhal frequency, lock-in and its hysteresis, the gusts' statistics, bounds, mapping), a preset renderer (`make render_aeolian`, with a `probe` mode), and cycle counts on the board. |
 | `lib/raw_voice.h`, `lib/raw_ctl.h`, `objects/raw_*.axo` | The raw monosynth: band-limited oscillators (PolyBLEP, PolyBLAMP), the Korg-35-style filters (zero-delay feedback, a scalar Newton solve per sample, its error bound and stability argument in the comments), the half-band decimator, the MS-20 envelopes; its Launchkey mapping (the single source of truth for the raw cheat sheet) and objects. |
 | `tests/test_raw.cpp`, `tests/render_raw.cpp`, `objects/dev/raw_cycles.axo`, `patches/bench_raw/` | Tests against exact results (the filters against the bilinear transform, the self-oscillation threshold and amplitude, the solve, the decimator's bands, aliasing, envelope timing, the mono key logic, the mapping), a preset renderer (`make render_raw`, with a `probe` mode), cycle counts on the board and the DSP-load benchmarks. |
+| `lib/quartet_voice.h`, `lib/quartet_ctl.h`, `objects/quartet_*.axo` | The quartet voices: 4-point BLEP oscillators and the flip-flop sub, the 4-pole low-pass (linear zero-delay stages, the diode-like limiter solved per sample with exactly one root, its stability argument; and the full OTA model with saturating stages kept as a host reference), ADSR and gate, LFO, S&H, the Ensemble; its Launchkey mapping (the single source of truth for the quartet cheat sheet), voice assignment, presets and objects. |
+| `tests/test_quartet.cpp`, `tests/render_quartet.cpp`, `objects/dev/quartet_cycles.axo`, `patches/bench_quartet/` | Tests against exact results (the low-pass against the bilinear ladder, the threshold k = 4, self-oscillation at the cutoff, the solve, the full model against a double-precision implicit solve, aliasing, envelope timing, the Ensemble, key assignment, presets, pickup), a scene renderer (`make render_quartet`), cycle counts on the board and the DSP-load benchmarks. |
 | `lib/patch_switch.h`, `objects/patch_switch.axo`, `tests/test_switch.cpp` | The patch switcher (in every patch): hold both buttons left of the pads + a top pad, tested on the host; the object checks the card and calls the firmware's `LoadPatch` from k-rate code. |
 | `objects/dev/sd_list.axo`, `load_test.axo`, `patches/dev/switch_test.axp` | Read-only card listing, a load-by-file-name test, and the switcher alone (send it the gesture over USB MIDI with `amidi` during `-runTest`). |
 | `tests/test_freak.cpp` | Host unit tests (`make test`, with ASan/UBSan). |
@@ -179,6 +195,8 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
 | 128-point real FFT / complex FFT (CMSIS radix 8, firmware bit reversal) | 5,700 / 9,300 cycles (radix 2 before: 14,000 / 22,000) | |
 | `aeolian_v1` (8 strings, stereo delay, reverb), constant | 75.5 % (104.5 % before the string loop was rewritten) | 20.8 KB |
 | `raw_v1` (mono voice at 96 kHz, mono delay, reverb), constant | 70.5–79.5 % (by oscillator wave; most with VCO2 on ring) | 22 KB |
+| `quartet_v1`, idle / four voices / every source, full resonance, Ensemble | 8.5 % / 64.5 % / 72 % | 18.7 KB |
+| quartet low-pass, per sample (board) | 178 cycles (the full OTA model with saturating stages: 641; a voice 449 cycles) | |
 | aeolian string, per sample (board) | ~150 cycles (265 at first: a division, int/float conversions and member reloads per sample) | |
 | grains bank load from SD (8 files, 3000 KB, background thread) | 1.06 s (2.8 MB/s) | |
 | Elements reverb / diffuser / string / tube | 19.5 / 7.5 / 5 / 4.5 % | ~0 (code in firmware) |

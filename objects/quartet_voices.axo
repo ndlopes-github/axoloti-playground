@@ -1,0 +1,46 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="quartet_voices" uuid="da9eba08-bda8-4c05-89fb-3d524552b75c">
+      <sDescription>The quartet patch's four voices, after the Roland Jupiter-4: VCO (saw, square, pulse, PWM) + sub-oscillator + noise, 1-pole high-pass, 4-pole low-pass with diode-limited resonance to self-oscillation, VCA; one ADSR (or the gate) per voice; the shared LFO and S&amp;H; the Ensemble (stereo chorus, on fader button 8). Stereo out. Settings and notes come from the quartet_ctl bus, so it only works next to one. The code is lib/quartet_voice.h, shared with the host tests and renderer.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32buffer name="l"/>
+         <frac32buffer name="r"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/quartet_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::QuartetMod qm;
+freak::QuartetVoice qv[freak::kQVoices];
+freak::QEnsemble ens;
+uint32_t restart_seen;
+float buf[BUFSIZE], bl[BUFSIZE], br[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[qm.init();
+for (int i = 0; i < freak::kQVoices; i++) qv[i].init((uint32_t)i + 1);
+ens.init();
+restart_seen = freak::qbus().restart;]]></code.init>
+      <code.krate><![CDATA[freak::QuartetBus &b = freak::qbus();
+if (b.restart != restart_seen) {
+   restart_seen = b.restart;
+   qm.restart();
+}
+qm.block(b.P);
+for (int i = 0; i < BUFSIZE; i++) buf[i] = 0.0f;
+for (int i = 0; i < freak::kQVoices; i++) {
+   qv[i].note = b.note[i];
+   qv[i].gate = b.gate[i];
+   qv[i].trig = b.trig[i];
+   qv[i].detune = b.detune[i];
+   qv[i].render(b.P, qm, buf);
+}
+ens.process(b.ensemble, buf, bl, br);
+for (int i = 0; i < BUFSIZE; i++) {
+   outlet_l[i] = (int32_t)(freak::clampf(bl[i], -1.0f, 1.0f) * (1 << 27));
+   outlet_r[i] = (int32_t)(freak::clampf(br[i], -1.0f, 1.0f) * (1 << 27));
+}]]></code.krate>
+   </obj.normal>
+</objdefs>
