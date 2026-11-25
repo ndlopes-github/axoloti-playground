@@ -1,0 +1,47 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="west_voices" uuid="6e392c98-d27f-47c9-8915-c70aee14524c">
+      <sDescription>The westcoast patch's four voices: a complex oscillator (modulation oscillator, through-zero FM of a sine, wavefolder) into a vactrol low-pass gate, with a function generator and uncertainty, after Buchla's 259, 292, 281 and 266; all at 96 kHz, summed and decimated to 48 kHz. Mono out. Settings and notes come from the west_ctl bus, so it only works next to one. The code is lib/west_voice.h.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets>
+         <frac32buffer name="out"/>
+      </outlets>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../lib/west_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::WestVoice wv[freak::kWVoices];
+freak::WestMix mix;
+freak::WestDrift drift;
+uint32_t restrike_seen, reroll_seen;
+float o96[2 * BUFSIZE], o[BUFSIZE];]]></code.declaration>
+      <code.init><![CDATA[freak::wtab().init();
+for (int i = 0; i < freak::kWVoices; i++) wv[i].init((uint32_t)i + 1);
+mix.init();
+drift.init();
+restrike_seen = freak::wbus().restrike;
+reroll_seen = freak::wbus().reroll;]]></code.init>
+      <code.krate><![CDATA[freak::WestBus &b = freak::wbus();
+const bool restrike = b.restrike != restrike_seen, reroll = b.reroll != reroll_seen;
+restrike_seen = b.restrike;
+reroll_seen = b.reroll;
+const float d = drift.tick(b.drift_hz);
+for (int i = 0; i < 2 * BUFSIZE; i++) o96[i] = 0.0f;
+for (int i = 0; i < freak::kWVoices; i++) {
+   freak::WestVoice &v = wv[i];
+   v.note = b.note[i];
+   v.gate = b.gate[i];
+   v.trig = b.trig[i];
+   if (v.trig != v.trig_seen) v.vel = b.vel[i];
+   if (restrike && v.gate) { v.strike = freak::kWStrike; v.vel = b.strike_vel; }
+   if (reroll && v.gate) v.rnd = v.rng.uni();
+   v.render(b.P, d, o96);
+}
+mix.process(o96, o);
+for (int i = 0; i < BUFSIZE; i++)
+   outlet_out[i] = (int32_t)(freak::clampf(o[i], -1.0f, 1.0f) * (1 << 27));]]></code.krate>
+   </obj.normal>
+</objdefs>

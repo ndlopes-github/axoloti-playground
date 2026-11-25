@@ -1,0 +1,59 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="west_ctl" uuid="742ab521-b135-47b2-bfa0-1eb62262d3dc">
+      <sDescription>Launchkey 49 MK3 control hub for the westcoast patch: four voices with velocity, HOLD (Play); faders MOD RATIO, FM INDEX, MOD SHAPE, TIMBRE, SYMMETRY, RISE, FALL, LPG DECAY, volume; knobs FUNC&gt;TIMBRE, FUNC&gt;FM, UNCERTAINTY, LPG BIAS, DRIFT RATE, DRIFT&gt;TIMBRE, GLIDE, BEND RANGE, with pickup; fader buttons MO TRACK, RATIO SNAP, FUNC MODE, FUNC RESPONSE, LPG MODE, PING, next preset; Track &lt; &gt; range; Capture MIDI dice; top pads presets; bottom pads FOLD, FM (pressure), STRIKE, RANDOM. It publishes on the bus west_voices reads. The mapping lives in lib/west_ctl.h. Use one per patch.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs>
+         <combo name="test">
+            <MenuEntries>
+               <string>off</string>
+               <string>4 voices held, sustained</string>
+            </MenuEntries>
+            <CEntries>
+               <string>0</string>
+               <string>1</string>
+            </CEntries>
+         </combo>
+      </attribs>
+      <includes>
+         <include>../lib/west_ctl.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::WestCtl wc;]]></code.declaration>
+      <code.init><![CDATA[wc.init();
+// test aid for -runTest: four voices held, the gate open (the costliest case)
+if (attr_test == 1) {
+   wc.apply_preset(3);
+   wc.key_on(48, 0.8f); wc.key_on(52, 0.8f); wc.key_on(55, 0.8f); wc.key_on(59, 0.8f);
+}
+wc.publish();]]></code.init>
+      <code.krate><![CDATA[wc.tick();
+if ((wc.ticks & 63) == 0) {
+   freak::WEvent e;
+   if (wc.pop_event(e)) {
+      switch (e.type) {
+      case freak::WEV_TRACK: LogTextMessage("westcoast: MO %s", e.a ? "follows the keys" : "free"); break;
+      case freak::WEV_SNAP: LogTextMessage("westcoast: ratio snap %s", e.a ? "on" : "off"); break;
+      case freak::WEV_FMODE: LogTextMessage("westcoast: function %s", freak::kWFModeNames[e.a % freak::NUM_WF]); break;
+      case freak::WEV_FRESP: LogTextMessage("westcoast: response %s", freak::kWFRespNames[e.a % freak::NUM_WR]); break;
+      case freak::WEV_LPG: LogTextMessage("westcoast: gate %s", freak::kWLpgNames[e.a % freak::NUM_WL]); break;
+      case freak::WEV_PING: LogTextMessage("westcoast: gate %s", e.a ? "pings on each key" : "follows the function"); break;
+      case freak::WEV_RANGE: LogTextMessage("westcoast: range %s", freak::kWRangeNames[e.a % 4]); break;
+      case freak::WEV_HOLD: LogTextMessage("westcoast: hold %s", e.a ? "on" : "off"); break;
+      case freak::WEV_DICE: LogTextMessage("westcoast: dice (ratio %d, fm %d, timbre %d)", e.a, e.b, e.c); break;
+      case freak::WEV_RESET: LogTextMessage("westcoast: reset to preset 1"); break;
+      case freak::WEV_PRESET: LogTextMessage("westcoast: preset %d %s", e.a + 1, freak::kWPresets[e.a % freak::kNumWPresets].name); break;
+      case freak::WEV_PICKED:
+         if (e.a == freak::kWPickedFader) LogTextMessage("westcoast: fader %d caught up at %d", e.b + 1, e.c);
+         else LogTextMessage("westcoast: knob %d caught up at %d", e.b + 1, e.c);
+         break;
+      case freak::WEV_UNMAPPED: LogTextMessage("westcoast: unmapped CC %d on ch %d (value %d)", e.b, e.a, e.c); break;
+      }
+   }
+}]]></code.krate>
+      <code.midihandler><![CDATA[wc.midi(status, data1, data2);]]></code.midihandler>
+   </obj.normal>
+</objdefs>

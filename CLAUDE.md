@@ -200,6 +200,23 @@ measurements.
     with every source off.
   - DSP: idle 8.5 %, four voices 64.5 %, worst + Ensemble 72 %.
 
+- westcoast (eighth patch, 2026-11-25; not on the card yet): Nuno asked for
+  "a last west-coast type of patch". Four voices, each a complex oscillator
+  (modulation oscillator morphing sine/triangle/square, through-zero FM of
+  a sine, a sine wavefolder with symmetry) into a vactrol low-pass gate
+  (ping or function), a function generator and uncertainty, after Buchla's
+  259/292/281/266. `lib/west_voice.h`, `lib/west_ctl.h`. Lessons:
+  - All voices run at 96 kHz and are summed before one half-band decimator
+    (raw_voice.h's), so decimation is paid once.
+  - Polynomial sines with branches cost 717 cycles/sample per voice; a
+    1024-point sine table (bss, linear interpolation, error < 1e-5) and
+    locals brought it to 542. Coefficients every 8 samples instead of 4:
+    four voices held 80.5 % -> 74.5 % DSP (idle 13 %).
+  - **A preset that makes no sound is a bug the tests must catch**: the
+    pinged COMBO presets peaked at -26 dB (a 2 ms strike only opened the
+    vactrol to 0.59). The strike now drives it to the key's velocity, and
+    `tests/test_west.cpp` renders every preset and fails below -20 dBFS.
+
 - Launchkey and the board, learned 2026-11-13:
   - **Shift sends no MIDI** in standalone mode, and while it is held the keys
     send nothing either (the Launchkey keeps Shift + key for itself).
@@ -255,6 +272,12 @@ measurements.
 - quartet: presets 2-8 not tuned by ear; the Ensemble rate and depth are
   guesses (0.6 Hz, 4 +- 2.2 ms) to tune against Nuno's Jupiter-4; its
   self-oscillation and filter drive were not compared with the real unit.
+- westcoast: presets set from the parameter meanings, not tuned by ear; no
+  cheat sheet or overlay yet; not in the switcher (slot 8). Nuno proposed
+  (2026-11-25) switching patches from a Launchkey pad Custom Mode (set in
+  Novation Components: e.g. Custom Mode 1 pads -> notes 0-7 on channel
+  15): log what the pads send, then add it to lib/patch_switch.h (keep the
+  two-button gesture), add slot 8, re-upload all eight patches.
 - Patch switcher: works on the Launchkey (Nuno, 2026-11-12; new gesture
   2026-11-13). The seven patches are on the card (/<name>_v1/patch.bin;
   quartet is /start.bin; Nuno was re-uploading the other six for pad 7);

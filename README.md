@@ -87,6 +87,16 @@ one) and no delay or reverb (an external pedal). See
 [`docs/quartet_cheatsheet.pdf`](docs/quartet_cheatsheet.pdf) and the filter
 analysis in `lib/quartet_voice.h`.
 
+**`patches/westcoast/westcoast_v1.axp`** is the eighth patch (work in
+progress: not yet in the switcher, no cheat sheet): four voices after Buchla's
+west-coast modules. Each is a complex oscillator (a modulation oscillator
+morphing sine, triangle and square, through-zero FM of a sine, a wavefolder
+with symmetry) into a vactrol low-pass gate that pings on each key or follows
+a function generator (rise, fall; transient, sustain or cycle), with stored
+random values per note and a slow random drift. The voices run at 96 kHz and
+share one decimator. The faders play the timbre (ratio, FM, shape, fold,
+symmetry, rise, fall, gate decay). See `lib/west_ctl.h` and `lib/west_voice.h`.
+
 ## Switching patches (one SD card)
 
 Every patch carries `objects/patch_switch.axo`. To change patch, **hold both
@@ -196,6 +206,7 @@ runs for 1 s and logs the DSP load. The GUI patcher must be closed.
 | `aeolian_v1` (8 strings, stereo delay, reverb), constant | 75.5 % (104.5 % before the string loop was rewritten) | 20.8 KB |
 | `raw_v1` (mono voice at 96 kHz, mono delay, reverb), constant | 70.5–79.5 % (by oscillator wave; most with VCO2 on ring) | 22 KB |
 | `quartet_v1`, idle / four voices / every source, full resonance, Ensemble | 8.5 % / 64.5 % / 72 % | 18.7 KB |
+| `westcoast_v1`, idle / four voices held (gate open) | 13 % / 74.5 % | 15.3 KB |
 | quartet low-pass, per sample (board) | 178 cycles (the full OTA model with saturating stages: 641; a voice 449 cycles) | |
 | aeolian string, per sample (board) | ~150 cycles (265 at first: a division, int/float conversions and member reloads per sample) | |
 | grains bank load from SD (8 files, 3000 KB, background thread) | 1.06 s (2.8 MB/s) | |

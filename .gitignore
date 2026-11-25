@@ -29,3 +29,4 @@ tests/run_raw
 tests/render_raw
 tests/run_quartet
 tests/render_quartet
+tests/run_west

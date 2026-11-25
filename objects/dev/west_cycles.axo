@@ -1,0 +1,44 @@
+<objdefs appVersion="1.1.0">
+   <obj.normal id="west_cycles" uuid="4d29dd84-3179-4480-9119-bc92be2d0f3b">
+      <sDescription>Development aid: CPU cycles (DWT cycle counter, minimum over 1000 blocks) of the westcoast voice for one 16-sample block: one voice (FM, folded, gate open, held note), the mixer (decimator and DC blocker). One line to the patcher log, for -runTest.</sDescription>
+      <author>Axoloti project</author>
+      <license>MIT</license>
+      <inlets/>
+      <outlets/>
+      <displays/>
+      <params/>
+      <attribs/>
+      <includes>
+         <include>../../lib/west_voice.h</include>
+      </includes>
+      <code.declaration><![CDATA[freak::WestParams P;
+freak::WestVoice wv;
+freak::WestMix mix;
+float o96[2 * BUFSIZE], o[BUFSIZE];
+volatile float sink;
+uint32_t blocks, c_voice, c_mix;]]></code.declaration>
+      <code.init><![CDATA[CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+P = freak::WestParams();
+P.ratio = 1.5f; P.mo_track = true; P.mo_shape = 0.3f; P.fm = 2.0f; P.timbre = 0.7f; P.sym = 0.3f;
+P.rise = 0.01f; P.fall = 0.5f; P.fmode = freak::WF_SUSTAIN; P.fresp = freak::WR_LIN;
+P.f_timbre = 0.2f; P.f_fm = 1.0f; P.lpg_mode = freak::WL_COMBO; P.ping = false; P.lpg_decay = 0.3f; P.lpg_bias = 0.5f;
+P.rnd_note = 0.3f; P.drift = 0.2f; P.level = 0.5f;
+freak::wtab().init();
+wv.init(1);
+wv.note = 48; wv.gate = true; wv.trig = 1;
+mix.init();
+blocks = 0;
+c_voice = c_mix = 0xFFFFFFFFu;]]></code.init>
+      <code.krate><![CDATA[blocks++;
+#define MINC(var, code) { const uint32_t t0 = DWT->CYCCNT; code; const uint32_t d = DWT->CYCCNT - t0; if (d < var) var = d; }
+if (blocks < 1000) {
+   for (int i = 0; i < 2 * BUFSIZE; i++) o96[i] = 0.0f;
+   if (blocks > 100) { MINC(c_voice, wv.render(P, 0.1f, o96)); } else wv.render(P, 0.1f, o96);
+   MINC(c_mix, mix.process(o96, o));
+   sink = o[3];
+}
+if (blocks == 1100)
+   LogTextMessage("westcoast cycles per 16-sample block (min): one voice %d | mix (decimator, DC) %d", c_voice, c_mix);]]></code.krate>
+   </obj.normal>
+</objdefs>
