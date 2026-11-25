@@ -12,8 +12,9 @@
 //    spectrum is symmetric about 0 and folds into the positive side).
 //  - Wavefolder (TIMBRE, SYMMETRY): y = (1 - a) x + a sin(beta x + c) for
 //    the PO's sine x. With a = min(1, 8 t) and beta = (pi/2)(1 + 8 max(0,
-//    t - 1/8)) for TIMBRE t in [0, 1]: t = 0 is the plain sine, t = 1/8 the
-//    first fold (sin(pi/2 sin)), t = 1 beta = 4 pi, four folds each way.
+//    t - 1/8)) for TIMBRE t in [0, 1]: t = 0 is the plain sine, t = 1/8
+//    sin(pi/2 sin) (peaks at the fold point), the first fold at t = 1/4
+//    (beta = pi), t = 1 beta = 4 pi: four folds each way.
 //    sin(beta sin(theta) + c) = sum_n J_n(beta) sin(n theta + c) (the
 //    Jacobi-Anger expansion): the harmonics are Bessel weights, odd only for
 //    c = 0, and SYMMETRY c in [-pi/2, pi/2] brings in the even ones. |y| <= 1

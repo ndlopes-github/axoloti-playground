@@ -1,10 +1,10 @@
 % Launchkey 49 MK3 overlays: label strips to print at actual size, cut out and
 % lay on the panel next to the controls. Page 1 freak, page 2 grains, page 3 groove,
-% page 4 soliton, page 5 aeolian, page 6 raw, page 7 quartet.
+% page 4 soliton, page 5 aeolian, page 6 raw, page 7 quartet, page 8 westcoast.
 % Build: make overlays.  Labels come from lib/launchkey_ctl.h (freak),
 % lib/grains_ctl.h (grains), lib/groove_ctl.h (groove), lib/soliton_ctl.h
-% (soliton), lib/aeolian_ctl.h (aeolian), lib/raw_ctl.h (raw) and lib/quartet_ctl.h
-% (quartet), as on the cheat sheets.
+% (soliton), lib/aeolian_ctl.h (aeolian), lib/raw_ctl.h (raw), lib/quartet_ctl.h
+% (quartet) and lib/west_ctl.h (westcoast), as on the cheat sheets.
 %
 % Spacing: the centre-to-centre distances below are NOT measured (Novation
 % publishes no panel drawing). Each strip is divided into one cell per
@@ -394,7 +394,7 @@
   \tag{8}{40}{HOLD\\\sm{Play}}
   \tag{103}{50}{SOUND\\\sm{left of pads, upper}}
   \tag{103}{40}{\FX{FX}\\\sm{left of pads, lower}}
-  \tag{122}{40}{PATCH: both held\\\sm{+ top pad 1--7}}
+  \tag{122}{40}{PATCH: both held\\\sm{+ top pad 1--8}}
   \tag{122}{50}{\GR{MOD} page\\\sm{round, upper}}
 
   \placement{208}{165}
@@ -443,8 +443,49 @@
   \tag{27}{40}{PORTA\\\sm{Stop}}
   \tag{103}{50}{SOUND\\\sm{left of pads, upper}}
   \tag{103}{40}{\GR{MOD}\\\sm{left of pads, lower}}
-  \tag{122}{40}{PATCH: both held\\\sm{+ top pad 1--7}}
+  \tag{122}{40}{PATCH: both held\\\sm{+ top pad 1--8}}
   \tag{122}{50}{\GR{MOD} page\\\sm{round, upper}}
+
+  \placement{208}{165}
+  \ruler{8}{16}
+\end{tikzpicture}
+
+%======================================================================== westcoast
+\newpage
+\begin{tikzpicture}[x=1mm, y=1mm]
+  \useasboundingbox (0,0) rectangle (297,210);
+  \header{westcoast}{four voices after Buchla's 259, 292, 281, 266}
+
+  \strip{8}{168}{8}{\kp}{12}{%
+    {\textcolor{lfoc}{FUNC>}\\\textcolor{fltc}{TIMBRE}}, {\textcolor{lfoc}{FUNC>}\\FM}, {\GR{UNCER-}\\\GR{TAINTY}}, {\FX{LPG}\\\FX{BIAS}},
+    {\GR{DRIFT}\\\GR{RATE}}, {\GR{DRIFT>}\\\textcolor{fltc}{TIMBRE}}, {GLIDE}, {BEND\\\sm{range}}}%
+    {KNOBS (one page): modulation amounts}
+
+  \strip{8}{145}{8}{\pp}{10}{%
+    {\sm{1}\\bongo}, {\sm{2}\\marimba}, {\sm{3}\\bell}, {\sm{4}\\folded lead}, {\sm{5}\\bouncing cycle},
+    {\sm{6}\\metal drone}, {\sm{7}\\uncertain plonk}, {\sm{8}\\low thump}}%
+    {PADS, TOP ROW: presets}
+  \strip{8}{125}{8}{\pp}{10}{%
+    {\textcolor{fltc}{FOLD}\\\sm{pressure}}, {FM\\\sm{pressure}}, {\FX{STRIKE}\\\sm{ping again}}, {\GR{RANDOM}\\\sm{redraw}},
+    {\textcolor{freec}{--}}, {\textcolor{freec}{--}}, {\textcolor{freec}{--}}, {\textcolor{freec}{--}}}%
+    {PADS, BOTTOM ROW: gestures on the sounding voices}
+
+  \strip{8}{103}{9}{\fp}{7}{%
+    RATIO, FM, SHAPE, \textcolor{fltc}{TIMBRE}, \textcolor{fltc}{SYM}, \textcolor{lfoc}{RISE}, \textcolor{lfoc}{FALL}, \FX{DECAY}, VOL}%
+    {FADERS \quad oscillator \quad \textcolor{fltc}{folder} \quad \textcolor{lfoc}{function} \quad \FX{gate}}
+  \strip{8}{83}{9}{\fp}{10}{%
+    {MO\\\sm{track}}, {RATIO\\\sm{snap}}, {\textcolor{lfoc}{FUNC}\\\sm{mode}}, {\textcolor{lfoc}{FUNC}\\\sm{response}}, {\FX{LPG}\\\sm{mode}},
+    {\FX{PING}}, {\textcolor{freec}{--}}, {\textcolor{freec}{--}}, {NEXT\\\sm{preset}}}%
+    {FADER BUTTONS (step or toggle; a button acts on the press that lights it)}
+
+  \node[note, anchor=south west] at (8, 70) {TAGS, one per button};
+  \tag{8}{60}{\(\blacktriangleleft\) RANGE\\\sm{track \(\blacktriangleleft\)}}
+  \tag{27}{60}{RANGE \(\blacktriangleright\)\\\sm{track \(\blacktriangleright\)}}
+  \tag{84}{60}{BEND\\\sm{pitch wheel}}
+  \tag{8}{50}{\GR{DICE}\\\sm{Capture MIDI}}
+  \tag{65}{50}{RESET\\\sm{Undo}}
+  \tag{8}{40}{HOLD\\\sm{Play}}
+  \tag{122}{40}{PATCH: both held\\\sm{+ top pad 1--8}}
 
   \placement{208}{165}
   \ruler{8}{16}

@@ -200,7 +200,7 @@ measurements.
     with every source off.
   - DSP: idle 8.5 %, four voices 64.5 %, worst + Ensemble 72 %.
 
-- westcoast (eighth patch, 2026-11-25; not on the card yet): Nuno asked for
+- westcoast (eighth patch, 2026-11-25; switcher slot 8): Nuno asked for
   "a last west-coast type of patch". Four voices, each a complex oscillator
   (modulation oscillator morphing sine/triangle/square, through-zero FM of
   a sine, a sine wavefolder with symmetry) into a vactrol low-pass gate
@@ -272,12 +272,13 @@ measurements.
 - quartet: presets 2-8 not tuned by ear; the Ensemble rate and depth are
   guesses (0.6 Hz, 4 +- 2.2 ms) to tune against Nuno's Jupiter-4; its
   self-oscillation and filter drive were not compared with the real unit.
-- westcoast: presets set from the parameter meanings, not tuned by ear; no
-  cheat sheet or overlay yet; not in the switcher (slot 8). Nuno proposed
-  (2026-11-25) switching patches from a Launchkey pad Custom Mode (set in
-  Novation Components: e.g. Custom Mode 1 pads -> notes 0-7 on channel
-  15): log what the pads send, then add it to lib/patch_switch.h (keep the
-  two-button gesture), add slot 8, re-upload all eight patches.
+- westcoast: presets set from the parameter meanings, not tuned by ear. In
+  the switcher as slot 8 (2026-11-25); the other seven patches need a
+  re-upload to know pad 8.
+- Switching from a Launchkey pad Custom Mode (Nuno's idea, 2026-11-25:
+  Custom Mode 1 pads -> notes 0-7 on channel 15, set in Novation
+  Components): **postponed by Nuno**. When resumed: log what the pads send,
+  then add it to lib/patch_switch.h and keep the two-button gesture.
 - Patch switcher: works on the Launchkey (Nuno, 2026-11-12; new gesture
   2026-11-13). The seven patches are on the card (/<name>_v1/patch.bin;
   quartet is /start.bin; Nuno was re-uploading the other six for pad 7);

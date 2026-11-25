@@ -46,7 +46,7 @@ tests/run_switch: tests/test_switch.cpp lib/patch_switch.h
 tools/axo_dfu: tools/axo_dfu.c
 	$(CC) -O2 -Wall -o $@ $< -l:libusb-1.0.so.0
 
-cheatsheet: docs/cheatsheet.pdf docs/grains_cheatsheet.pdf docs/groove_cheatsheet.pdf docs/soliton_cheatsheet.pdf docs/aeolian_cheatsheet.pdf docs/raw_cheatsheet.pdf docs/quartet_cheatsheet.pdf
+cheatsheet: docs/cheatsheet.pdf docs/grains_cheatsheet.pdf docs/groove_cheatsheet.pdf docs/soliton_cheatsheet.pdf docs/aeolian_cheatsheet.pdf docs/raw_cheatsheet.pdf docs/quartet_cheatsheet.pdf docs/westcoast_cheatsheet.pdf
 
 # Panel overlays for the Launchkey (print at actual size, cut out)
 overlays: docs/overlays.pdf
@@ -174,3 +174,6 @@ WEST_DEPS = lib/west_ctl.h lib/west_voice.h lib/raw_voice.h lib/launchkey_ctl.h 
 
 tests/run_west: tests/test_west.cpp $(WEST_DEPS)
 	$(CXX) $(CXXFLAGS) -o $@ $<
+
+docs/westcoast_cheatsheet.pdf: docs/westcoast_cheatsheet.tex
+	cd docs && latexmk -pdf -interaction=nonstopmode -halt-on-error westcoast_cheatsheet.tex >/dev/null && latexmk -c westcoast_cheatsheet.tex >/dev/null

@@ -87,21 +87,22 @@ one) and no delay or reverb (an external pedal). See
 [`docs/quartet_cheatsheet.pdf`](docs/quartet_cheatsheet.pdf) and the filter
 analysis in `lib/quartet_voice.h`.
 
-**`patches/westcoast/westcoast_v1.axp`** is the eighth patch (work in
-progress: not yet in the switcher, no cheat sheet): four voices after Buchla's
-west-coast modules. Each is a complex oscillator (a modulation oscillator
-morphing sine, triangle and square, through-zero FM of a sine, a wavefolder
-with symmetry) into a vactrol low-pass gate that pings on each key or follows
+**`patches/westcoast/westcoast_v1.axp`** is the eighth patch: four voices
+after Buchla's west-coast modules. Each is a complex oscillator (a modulation
+oscillator morphing sine, triangle and square, through-zero FM of a sine, a
+wavefolder with symmetry) into a vactrol low-pass gate that pings on each key or follows
 a function generator (rise, fall; transient, sustain or cycle), with stored
 random values per note and a slow random drift. The voices run at 96 kHz and
 share one decimator. The faders play the timbre (ratio, FM, shape, fold,
-symmetry, rise, fall, gate decay). See `lib/west_ctl.h` and `lib/west_voice.h`.
+symmetry, rise, fall, gate decay). See
+[`docs/westcoast_cheatsheet.pdf`](docs/westcoast_cheatsheet.pdf) and the model
+in `lib/west_voice.h`.
 
 ## Switching patches (one SD card)
 
 Every patch carries `objects/patch_switch.axo`. To change patch, **hold both
 buttons left of the pads and tap a top pad**: pad 1 freak, 2 grains,
-3 groove, 4 soliton, 5 aeolian, 6 raw, 7 quartet. On their own those buttons only switch
+3 groove, 4 soliton, 5 aeolian, 6 raw, 7 quartet, 8 westcoast. On their own those buttons only switch
 the knob page, and the switch is armed only while they are held, so a page
 change followed by a preset never loads a patch. (Shift + a key was tried
 first: in standalone mode Shift sends no MIDI, and while it is held the keys
@@ -109,7 +110,7 @@ send nothing.) The switcher loads
 `/<name>_v1/patch.bin` from the card with the firmware's `LoadPatch` (no
 firmware change). A patch that is not on the card is logged and ignored.
 
-To install: open each of the seven patches in the patcher and use *Upload to
+To install: open each of the eight patches in the patcher and use *Upload to
 SD Card*. That writes `/<name>_v1/patch.bin` and the samples the patch needs
 (`/grains`, `/kit`) and touches nothing else. Then use *Upload to SD Card as
 Startup* on the one that should start when the card is in (`/start.bin`).
